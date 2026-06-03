@@ -584,7 +584,7 @@
                             <span class="box-label">Tổng số / Total</span>
                             <span class="box-value" id="se-total">-</span>
                         </div>
-                        <div class="project-stat-box submitted">
+                        <div class="project-stat-box submitted" onclick="showSubmittedChecksheetsList('SE', event); event.stopPropagation();" style="cursor: pointer;">
                             <span class="box-label">Đã nộp / Done</span>
                             <span class="box-value" id="se-submitted">-</span>
                         </div>
@@ -617,7 +617,7 @@
                             <span class="box-label">Tổng số / Total</span>
                             <span class="box-value" id="co-total">-</span>
                         </div>
-                        <div class="project-stat-box submitted">
+                        <div class="project-stat-box submitted" onclick="showSubmittedChecksheetsList('Co-molded', event); event.stopPropagation();" style="cursor: pointer;">
                             <span class="box-label">Đã nộp / Done</span>
                             <span class="box-value" id="co-submitted">-</span>
                         </div>
@@ -791,6 +791,41 @@
                 <h3 style="font-size: 18px; color: var(--text-primary); margin-bottom: 10px;">Chưa chọn công đoạn kiểm tra</h3>
                 <p style="font-size: 14px;">Vui lòng chọn <strong>Dự án</strong> và <strong>Công đoạn</strong> ở bảng trên để tải nội dung checksheet hoặc tiếp tục điền bản nháp.</p>
                 <p class="subtitle-vi" style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">Please select a Project and Operation above to load the corresponding checksheet.</p>
+            </div>
+
+            <!-- Submitted Checksheets List Modal -->
+            <div id="submitted-list-modal" class="modal-backdrop" style="display: none;" onclick="closeSubmittedListModal(event)">
+                <div class="modal-content glass" onclick="event.stopPropagation()" style="max-width: 850px; width: 90%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border-glass); padding-bottom: 15px;">
+                        <h3 style="font-size: 20px; font-family: var(--font-heading); color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                            <i data-lucide="clipboard-check" style="color: var(--success-color); width: 24px; height: 24px;"></i>
+                            <span id="submitted-modal-title">Danh sách checksheet đã nộp</span>
+                        </h3>
+                        <button class="modal-close-btn" onclick="toggleSubmittedListModal(false)">
+                            <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+                        </button>
+                    </div>
+                    
+                    <div style="padding: 5px 0;">
+                        <div style="overflow-x: auto;">
+                            <table class="workspace-table" id="submitted-list-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tiêu đề / Title</th>
+                                        <th>Công đoạn / Operation</th>
+                                        <th>Chuyền / Line</th>
+                                        <th>Máy / Machine</th>
+                                        <th>Người kiểm tra / Inspector</th>
+                                        <th style="width: 140px;">Hành động / Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="submitted-list-tbody">
+                                    <!-- Populated dynamically by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Admin User Management Modal (admin only) -->
@@ -2628,6 +2663,90 @@ async function importChecksheetData(jsonData) {
             if (e.target === document.getElementById('admin-settings-modal')) {
                 toggleAdminSettingsModal(false);
             }
+        }
+
+        function toggleSubmittedListModal(show) {
+            const modal = document.getElementById('submitted-list-modal');
+            if (!modal) return;
+            if (show) {
+                modal.style.display = 'flex';
+                modal.offsetHeight; // trigger reflow
+                modal.classList.add('show');
+            } else {
+                modal.classList.remove('show');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            }
+        }
+
+        function closeSubmittedListModal(e) {
+            if (e.target === document.getElementById('submitted-list-modal')) {
+                toggleSubmittedListModal(false);
+            }
+        }
+
+        async function showSubmittedChecksheetsList(project, event) {
+            if (event) event.stopPropagation();
+            
+            const dateInput = document.getElementById('analytics-date');
+            let dateVal = dateInput ? dateInput.value : '';
+            if (!dateVal) {
+                dateVal = new Date().toISOString().split('T')[0];
+            }
+            
+            try {
+                const url = `/api/v1/checksheets?project=${encodeURIComponent(project)}&date=${encodeURIComponent(dateVal)}&status=Submitted`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Không thể tải danh sách checksheet đã hoàn thành');
+                
+                const checksheets = await response.json();
+                
+                const modal = document.getElementById('submitted-list-modal');
+                const title = document.getElementById('submitted-modal-title');
+                const tbody = document.getElementById('submitted-list-tbody');
+                
+                if (!modal || !tbody) return;
+                
+                title.innerText = `Checksheet Đã Hoàn Thành - Dự án ${project} (${dateVal})`;
+                
+                tbody.innerHTML = '';
+                if (checksheets.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state" style="text-align:center; padding: 25px;">Chưa hoàn thành công đoạn nào trong ngày này.</td></tr>';
+                } else {
+                    checksheets.forEach(cs => {
+                        const tr = document.createElement('tr');
+                        const ops = PROJECT_OPERATIONS[cs.project] || [];
+                        const matchedOp = ops.find(o => o.value === cs.operation);
+                        const opLabel = matchedOp ? matchedOp.label : cs.operation;
+                        
+                        tr.innerHTML = `
+                            <td><strong>${cs.title}</strong></td>
+                            <td>${opLabel}</td>
+                            <td>${cs.line || 'Line 1'}</td>
+                            <td>${cs.machine || 'N/A'}</td>
+                            <td>${cs.filler_name || 'N/A'}</td>
+                            <td>
+                                <button class="btn btn-outline" onclick="viewChecksheetFromList('${cs.id}')" style="padding: 4px 10px; font-size: 11px;">
+                                    <i data-lucide="eye" style="width: 12px; height: 12px; vertical-align: middle;"></i> Xem chi tiết
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+                
+                toggleSubmittedListModal(true);
+                lucide.createIcons();
+                
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function viewChecksheetFromList(id) {
+            toggleSubmittedListModal(false);
+            viewChecksheet(id);
         }
 
         function selectProjectFromDashboard(project) {
