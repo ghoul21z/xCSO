@@ -1,4 +1,6 @@
 import sqlite3
+from backend.db import get_db_connection
+sqlite3.connect = lambda *args, **kwargs: get_db_connection()
 import json
 from main import DB_PATH
 

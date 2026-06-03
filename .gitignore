@@ -1,0 +1,15 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*$py.class
+
+# Databases
+backend/checksheet.db
+backend/checksheet.db-journal
+
+# Local environment
+.env
+.venv/
+env/
+venv/
+ENV/

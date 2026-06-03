@@ -18,6 +18,7 @@ if sys.stderr.encoding != 'utf-8':
         pass
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from datetime import datetime
+from backend.db import get_db_connection
 
 # Determine project directories
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -27,7 +28,7 @@ DB_PATH = os.path.join(BASE_DIR, "backend", "checksheet.db")
 # Create database and tables automatically on startup
 def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     # Create templates table
@@ -153,7 +154,7 @@ def seed_operation_templates():
         },
     ]
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     now = datetime.utcnow().isoformat()
 
