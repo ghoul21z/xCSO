@@ -11,6 +11,19 @@ if sys.stderr.encoding != 'utf-8':
     try: sys.stderr.reconfigure(encoding='utf-8')
     except AttributeError: pass
 
+# Try to load local .env file if it exists (for local development using external database)
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+if os.path.exists(env_path):
+    try:
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line_str = line.strip()
+                if line_str and not line_str.startswith("#") and "=" in line_str:
+                    key, val = line_str.split("=", 1)
+                    os.environ[key.strip()] = val.strip()
+    except Exception as e:
+        print(f"[DB] Error loading .env file: {e}")
+
 DATABASE_URL = os.environ.get("DATABASE_URL")
 USE_POSTGRES = DATABASE_URL is not None
 
