@@ -63,6 +63,9 @@ class PostgresCursorWrapper:
         # Convert SQLite "?" placeholders to PostgreSQL "%s" placeholders
         query = query.replace('?', '%s')
         
+        # Convert case-sensitive LIKE to case-insensitive ILIKE in PostgreSQL
+        query = re.sub(r'\bLIKE\b', 'ILIKE', query, flags=re.IGNORECASE)
+        
         # Execute query
         if params is None:
             self.cursor.execute(query)
