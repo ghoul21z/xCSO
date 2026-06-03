@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xOCS - Secure Authentication</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        /* --- Premium Glassmorphic Theme --- */
+        :root {
+            color-scheme: light;
+            --font-primary: 'Inter', sans-serif;
+            --font-heading: 'Inter', sans-serif;
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-fast: all 0.15s ease;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --bg-app: linear-gradient(135deg, #f5f7fb 0%, #eef2f9 100%);
+            --bg-glass: rgba(255, 255, 255, 0.85);
+            --bg-glass-card: rgba(255, 255, 255, 0.95);
+            --bg-glass-active: rgba(37, 99, 235, 0.08);
+            --border-glass: rgba(37, 99, 235, 0.12);
+            --border-glass-glow: rgba(37, 99, 235, 0.3);
+            --text-primary: #1e293b;
+            --text-muted: #64748b;
+            --primary-color: #2563eb;
+            --primary-glow: rgba(37, 99, 235, 0.25);
+            --secondary-color: #0ea5e9;
+            --success-color: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
+            --danger-color: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.2);
+            --shadow-premium: 0 10px 30px -10px rgba(37, 99, 235, 0.08), 0 1px 3px rgba(37, 99, 235, 0.03);
+            --input-bg: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-primary); }
+        body { background: var(--bg-app); color: var(--text-primary); min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow-x: hidden; }
+        h1, h2, h3 { font-family: var(--font-heading); font-weight: 700; }
+        
+        .auth-container { width: 100%; max-width: 450px; padding: 20px; z-index: 10; animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+        .brand-header { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 30px; text-align: center; }
+        .brand-icon { width: 50px; height: 50px; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); border-radius: 14px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--primary-glow); }
+        .brand-icon i { color: #fff; width: 24px; height: 24px; }
+        .brand-header h2 { font-size: 28px; font-weight: 800; background: linear-gradient(to right, var(--text-primary), var(--primary-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .brand-header .subtitle { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+ 
+        .glass-card { background: var(--bg-glass-card); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--border-glass); border-radius: var(--radius-lg); box-shadow: var(--shadow-premium); padding: 35px; position: relative; overflow: hidden; }
+        
+        /* Tabs header */
+        .auth-tabs { display: flex; background: rgba(37, 99, 235, 0.05); border-radius: var(--radius-md); padding: 4px; border: 1px solid var(--border-glass); margin-bottom: 25px; }
+        .tab-btn { flex: 1; border: 0; background: transparent; color: var(--text-muted); padding: 10px; font-size: 14px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: var(--transition-smooth); display: flex; align-items: center; justify-content: center; gap: 8px; outline: none; }
+        .tab-btn.active { background: var(--bg-glass-active); color: var(--primary-color); border: 1px solid rgba(37, 99, 235, 0.1); box-shadow: var(--shadow-premium); }
+
+        .auth-form { display: none; }
+        .auth-form.active { display: block; animation: slideIn 0.4s ease forwards; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+
+        .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; position: relative; }
+        .form-group label { font-size: 13px; font-weight: 600; color: var(--text-primary); display: flex; justify-content: space-between; }
+        .form-group label span.sub-vi { font-weight: normal; color: var(--text-muted); font-size: 11px; }
+        
+        .input-wrapper { position: relative; }
+        .input-wrapper i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); width: 16px; height: 16px; transition: var(--transition-fast); }
+        .input-wrapper input { background: var(--input-bg); border: 1px solid var(--border-glass); padding: 12px 16px 12px 42px; border-radius: var(--radius-md); color: var(--text-primary); width: 100%; outline: none; font-size: 14px; transition: var(--transition-smooth); }
+        .input-wrapper input:focus { border-color: var(--primary-color); box-shadow: 0 0 10px var(--primary-glow); }
+        .input-wrapper input:focus + i { color: var(--primary-color); }
+
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; font-size: 14px; font-weight: 700; border-radius: var(--radius-md); cursor: pointer; border: 1px solid transparent; transition: var(--transition-smooth); width: 100%; outline: none; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: #fff; box-shadow: 0 4px 15px var(--primary-glow); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--primary-glow); }
+        .btn-primary:active { transform: translateY(0); }
+
+        /* Helper Card for default accounts */
+        .helper-card { background: rgba(37, 99, 235, 0.04); border: 1px dashed rgba(37, 99, 235, 0.2); border-radius: var(--radius-md); padding: 15px; margin-top: 25px; font-size: 12px; line-height: 1.6; }
+        .helper-card h4 { display: flex; align-items: center; gap: 6px; font-weight: 700; color: var(--primary-color); margin-bottom: 6px; }
+        .helper-card ul { list-style: none; padding-left: 0; color: var(--text-muted); }
+        .helper-card li strong { color: var(--text-primary); }
+
+        /* Toast notifications */
+        .toast-container { position: fixed; top: 25px; right: 25px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 14px 20px; border-radius: var(--radius-md); color: #fff; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 12px; min-width: 250px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: toastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes toastIn { from { transform: translateX(100%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
+        .toast.success { background: var(--success-color); }
+        .toast.error { background: var(--danger-color); }
+        .toast.info { background: var(--primary-color); }
+    </style>
+</head>
+<body>
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="auth-container">
+        <header class="brand-header">
+            <div class="brand-icon">
+                <i data-lucide="check-square"></i>
+            </div>
+            <h2>xOCS Compliance</h2>
+            <div class="subtitle">Hệ thống Quản lý & Giám sát Checklist online</div>
+        </header>
+
+        <div class="glass-card">
+            <!-- Navigation Tabs -->
+            <div class="auth-tabs">
+                <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">
+                    <i data-lucide="log-in"></i> Đăng Nhập / Login
+                </button>
+                <button class="tab-btn" id="tab-register" onclick="switchTab('register')">
+                    <i data-lucide="user-plus"></i> Đăng Ký / Register
+                </button>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <form id="form-login" class="auth-form active" onsubmit="handleLoginSubmit(event)">
+                <div class="form-group">
+                    <label for="login-username">
+                        <span>Tên đăng nhập</span>
+                        <span class="sub-vi">Username</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="text" id="login-username" required placeholder="Nhập tên đăng nhập...">
+                        <i data-lucide="user"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="login-password">
+                        <span>Mật khẩu</span>
+                        <span class="sub-vi">Password</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="password" id="login-password" required placeholder="Nhập mật khẩu...">
+                        <i data-lucide="lock"></i>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="btn-login-submit">
+                    Đăng Nhập <i data-lucide="arrow-right"></i>
+                </button>
+            </form>
+
+            <!-- REGISTER FORM -->
+            <form id="form-register" class="auth-form" onsubmit="handleRegisterSubmit(event)">
+                <div class="form-group">
+                    <label for="register-username">
+                        <span>Tên đăng nhập mới</span>
+                        <span class="sub-vi">Username (at least 3 characters)</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="text" id="register-username" required placeholder="e.g. inspector_qa">
+                        <i data-lucide="user"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="register-password">
+                        <span>Mật khẩu mới</span>
+                        <span class="sub-vi">Password (at least 6 characters)</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="password" id="register-password" required placeholder="e.g. ******">
+                        <i data-lucide="lock"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="register-confirm">
+                        <span>Xác nhận mật khẩu</span>
+                        <span class="sub-vi">Confirm Password</span>
+                    </label>
+                    <div class="input-wrapper">
+                        <input type="password" id="register-confirm" required placeholder="Xác nhận lại mật khẩu...">
+                        <i data-lucide="shield-check"></i>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="btn-register-submit">
+                    Tạo Tài Khoản / Register <i data-lucide="check-circle"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const iconName = type === 'success' ? 'check-circle' : (type === 'error' ? 'alert-triangle' : 'info');
+            toast.innerHTML = `<i data-lucide="${iconName}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            lucide.createIcons();
+            setTimeout(() => {
+                toast.style.animation = 'toastIn 0.3s reverse forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.auth-form').forEach(frm => frm.classList.remove('active'));
+
+            if (tab === 'login') {
+                document.getElementById('tab-login').classList.add('active');
+                document.getElementById('form-login').classList.add('active');
+            } else {
+                document.getElementById('tab-register').classList.add('active');
+                document.getElementById('form-register').classList.add('active');
+            }
+        }
+
+        async function handleLoginSubmit(e) {
+            e.preventDefault();
+            const usernameInput = document.getElementById('login-username');
+            const passwordInput = document.getElementById('login-password');
+            const submitBtn = document.getElementById('btn-login-submit');
+
+            const payload = {
+                username: usernameInput.value,
+                password: passwordInput.value
+            };
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Đang đăng nhập...';
+
+            try {
+                const res = await fetch('/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Authentication failed');
+                }
+
+                showToast(`Đăng nhập thành công! Chào mừng ${data.username}`, 'success');
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1000);
+
+            } catch (err) {
+                showToast(err.message, 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Đăng Nhập <i data-lucide="arrow-right"></i>';
+                lucide.createIcons();
+            }
+        }
+
+        async function handleRegisterSubmit(e) {
+            e.preventDefault();
+            const usernameInput = document.getElementById('register-username');
+            const passwordInput = document.getElementById('register-password');
+            const confirmInput = document.getElementById('register-confirm');
+            const submitBtn = document.getElementById('btn-register-submit');
+
+            if (passwordInput.value !== confirmInput.value) {
+                showToast('Mật khẩu xác nhận không khớp! (Passwords do not match)', 'error');
+                return;
+            }
+
+            const payload = {
+                username: usernameInput.value,
+                password: passwordInput.value
+            };
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Đang đăng ký...';
+
+            try {
+                const res = await fetch('/api/v1/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Registration failed');
+                }
+
+                showToast(data.message || 'Đăng ký thành công! Chờ admin phê duyệt.', 'info');
+                usernameInput.value = '';
+                passwordInput.value = '';
+                confirmInput.value = '';
+
+                // Show pending approval notice
+                const form = document.getElementById('form-register');
+                const notice = document.createElement('div');
+                notice.className = 'helper-card';
+                notice.style.marginTop = '20px';
+                notice.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+                notice.style.background = 'rgba(245, 158, 11, 0.05)';
+                notice.innerHTML = `
+                    <h4 style="color: #f59e0b;"><i data-lucide="clock"></i> Tài khoản đang chờ phê duyệt</h4>
+                    <p style="color: var(--text-muted); font-size: 13px; line-height: 1.6;">
+                        Tài khoản của bạn đã được tạo thành công nhưng cần quản trị viên (Admin) phê duyệt trước khi có thể đăng nhập.<br>
+                        <span style="color: var(--text-primary);">Your account is pending admin approval.</span>
+                    </p>
+                `;
+                // Remove old notice if exists
+                const oldNotice = form.querySelector('.pending-notice');
+                if (oldNotice) oldNotice.remove();
+                notice.classList.add('pending-notice');
+                form.appendChild(notice);
+                lucide.createIcons();
+
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Tạo Tài Khoản / Register <i data-lucide="check-circle"></i>';
+                lucide.createIcons();
+            }
+        }
+    </script>
+</body>
+</html>

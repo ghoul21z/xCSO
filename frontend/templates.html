@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xOCS - Dữ liệu / Data Sync</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <style>
+        /* --- Premium Glassmorphic Design System --- */
+        :root {
+            color-scheme: light;
+            --font-primary: 'Inter', sans-serif;
+            --font-heading: 'Inter', sans-serif;
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --bg-app: linear-gradient(135deg, #f5f7fb 0%, #eef2f9 100%);
+            --bg-glass: rgba(255, 255, 255, 0.85);
+            --bg-glass-card: rgba(255, 255, 255, 0.95);
+            --bg-glass-active: rgba(37, 99, 235, 0.08);
+            --border-glass: rgba(37, 99, 235, 0.12);
+            --border-glass-glow: rgba(37, 99, 235, 0.3);
+            --text-primary: #1e293b;
+            --text-muted: #64748b;
+            --primary-color: #2563eb;
+            --primary-glow: rgba(37, 99, 235, 0.25);
+            --secondary-color: #0ea5e9;
+            --success-color: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
+            --danger-color: #ef4444;
+            --shadow-premium: 0 10px 30px -10px rgba(37, 99, 235, 0.08), 0 1px 3px rgba(37, 99, 235, 0.03);
+            --input-bg: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-primary); }
+        body { background: var(--bg-app); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; }
+        h1, h2, h3 { font-family: var(--font-heading); font-weight: 600; }
+        
+        .app-container { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; padding: 30px 20px; display: flex; flex-direction: column; height: 100vh; position: fixed; left: 0; top: 0; z-index: 100; }
+        .main-content { flex: 1; margin-left: 260px; padding: 40px; min-height: 100vh; display: flex; flex-direction: column; }
+        
+        .glass { background: var(--bg-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--border-glass); box-shadow: var(--shadow-premium); }
+        
+        /* Sidebar styling */
+        .sidebar .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; padding-left: 10px; }
+        .brand-icon { width: 38px; height: 38px; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px var(--primary-glow); }
+        .brand-icon i { color: #fff; width: 20px; height: 20px; }
+        .brand h2 { font-size: 24px; font-weight: 800; background: linear-gradient(to right, var(--text-primary), var(--primary-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .nav-menu { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+        .nav-item { display: flex; align-items: center; gap: 15px; padding: 12px 18px; color: var(--text-muted); text-decoration: none; border-radius: var(--radius-md); font-size: 15px; font-weight: 500; transition: var(--transition-smooth); }
+        .nav-item i { width: 18px; height: 18px; }
+        .nav-item:hover, .nav-item.active { color: var(--primary-color); background: var(--bg-glass-active); transform: translateX(5px); }
+        .nav-item.active { box-shadow: inset 3px 0 0 var(--primary-color); font-weight: 600; }
+        
+        .sidebar-footer { margin-top: auto; display: flex; flex-direction: column; gap: 15px; }
+        .app-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); padding-left: 10px; }
+        
+        /* Layout components */
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; }
+        .page-header h1 { font-size: 32px; font-weight: 800; color: var(--text-primary); }
+        .page-header .subtitle { color: var(--text-muted); margin-top: 5px; font-size: 16px; }
+        
+        /* Pane Management & Centered Panel */
+        .page-panel { animation: fadeIn 0.4s ease-out forwards; flex: 1; display: flex; flex-direction: column; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .sync-container { max-width: 900px; width: 100%; margin: auto; padding: 10px 0; display: flex; flex-direction: column; gap: 35px; }
+        .upload-section { padding: 40px 30px; border-radius: var(--radius-lg); background: var(--bg-glass-card); border: 1px dashed var(--border-glass); transition: var(--transition-smooth); }
+        .upload-section:hover { border-color: var(--border-glass-glow); }
+        
+        .upload-box {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 35px 20px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid var(--border-glass);
+            cursor: pointer;
+            text-align: center;
+            transition: var(--transition-smooth);
+        }
+        .upload-box:hover {
+            background: #ffffff !important;
+            border-color: rgba(37, 99, 235, 0.4) !important;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08);
+        }
+        
+        /* Toast Container */
+        .toast-container { position: fixed; top: 25px; right: 25px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 14px 20px; border-radius: var(--radius-md); color: #fff; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 12px; min-width: 250px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: toastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes toastIn { from { transform: translateX(100%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
+        .toast.success { background: var(--success-color); }
+        .toast.error { background: var(--danger-color); }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i data-lucide="check-square"></i>
+                </div>
+                <h2>xOCS</h2>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="/dashboard" class="nav-item">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Tổng quan / Overview</span>
+                </a>
+                <a href="/templates" class="nav-item active" id="sidebar-nav-templates">
+                    <i data-lucide="database"></i>
+                    <span>Dữ liệu / Data</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="app-status" style="border-top: 1px solid var(--border-glass); padding-top: 15px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff;" id="profile-initial">-</div>
+                        <div style="display: flex; flex-direction: column; text-align: left;">
+                            <span style="font-weight: 600; font-size: 13px;" id="profile-username">Loading...</span>
+                            <span style="font-size: 11px; color: var(--text-muted);" id="profile-role">-</span>
+                        </div>
+                    </div>
+                    <button onclick="handleLogout()" style="background: transparent; border: 0; color: var(--danger-color); font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 4px 0; outline: none;">
+                        <i data-lucide="log-out" style="width: 12px; height: 12px;"></i> Đăng Xuất (Logout)
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Body -->
+        <main class="main-content">
+            <div class="toast-container" id="toast-container"></div>
+
+            <section class="page-panel">
+                <header class="page-header">
+                    <div>
+                        <h1>Dữ liệu / Data Sync</h1>
+                        <p class="subtitle subtitle-vi">Khai báo cấu hình tiêu chuẩn và đồng bộ tệp kết quả kiểm tra</p>
+                        <p class="subtitle">Declare operational spec standards and sync daily quality checksheets</p>
+                            <div class="sync-container" style="max-width: 1080px;">
+                    
+                    <!-- Unified Spec Configuration & Daily Results Integration Area -->
+                    <div class="upload-section glass" style="border: 1px solid var(--border-glass); border-radius: var(--radius-lg); background: var(--bg-glass-card); box-shadow: var(--shadow-premium);">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid rgba(37,99,235,0.08); padding-bottom: 15px;">
+                            <div style="width: 50px; height: 50px; background: rgba(37, 99, 235, 0.08); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(37,99,235,0.15);">
+                                <i data-lucide="database" style="color: var(--primary-color); width: 26px; height: 26px;"></i>
+                            </div>
+                            <div>
+                                <h3 style="font-size: 22px; font-weight: 800; color: var(--text-primary);">Trung Tâm Đồng Bộ Dữ Liệu & Cấu Hình Spec / Data Sync & Spec Center</h3>
+                                <p style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">Tải lên cấu hình Spec hoặc đồng bộ kết quả kiểm tra chất lượng hàng ngày</p>
+                            </div>
+                        </div>
+
+                        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 30px; line-height: 1.6; background: rgba(37, 99, 235, 0.03); padding: 12px 18px; border-radius: var(--radius-sm); border-left: 4px solid var(--primary-color);">
+                            <strong>Hướng dẫn / Guide:</strong> Bảng điều khiển tích hợp cho phép bạn khai báo tệp cấu hình Spec tiêu chuẩn <em>(định nghĩa công đoạn)</em> hoặc trực tiếp đồng bộ tệp kết quả kiểm tra hàng ngày <em>(lưu trữ lịch sử)</em> vào hệ thống SQLite một cách nhanh chóng.
+                        </p>
+                        
+                        <!-- Grid layout with 2 boxes -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                            
+                            <!-- Box 1: Spec Template upload -->
+                            <div class="upload-box" onclick="document.getElementById('spec-upload-file').click()" style="border: 1px dashed var(--secondary-color); background: rgba(99,102,241,0.02);">
+                                <i data-lucide="file-cog" style="color: var(--secondary-color); width: 42px; height: 42px; margin-bottom: 15px;"></i>
+                                <span style="font-size: 16px; font-weight: 700; color: var(--text-primary);">1. Khai Báo Tiêu Chuẩn Spec</span>
+                                <span style="font-style: italic; font-size: 12px; color: var(--text-muted); margin-top: 2px;">Upload Spec Template</span>
+                                <span style="font-size: 11px; color: var(--text-muted); margin-top: 12px; background: rgba(255,255,255,0.9); padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">Chọn tệp .xlsx, .xls, .json</span>
+                            </div>
+                            
+                            <!-- Box 2: Inspection Results file sync -->
+                            <div class="upload-box" onclick="document.getElementById('data-upload-file').click()" style="border: 1px dashed var(--primary-color); background: rgba(37,99,235,0.02);">
+                                <i data-lucide="file-json" style="color: var(--primary-color); width: 42px; height: 42px; margin-bottom: 15px;"></i>
+                                <span style="font-size: 16px; font-weight: 700; color: var(--text-primary);">2. Đồng Bộ Tệp Kết Quả</span>
+                                <span style="font-style: italic; font-size: 12px; color: var(--text-muted); margin-top: 2px;">Sync Result File</span>
+                                <span style="font-size: 11px; color: var(--text-muted); margin-top: 12px; background: rgba(255,255,255,0.9); padding: 4px 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-glass);">Chọn tệp .xlsx, .xls, .json</span>
+                            </div>
+
+                        </div>
+
+                        <!-- Hidden File Inputs -->
+                        <input type="file" id="spec-upload-file" accept=".xlsx, .xls, .json" onchange="handleSpecUpload(event)" style="display: none;">
+                        <input type="file" id="data-upload-file" accept=".xlsx, .xls, .json" onchange="handleDataUpload(event)" style="display: none;">
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // --- Consolidated Dashboard & Checksheet Module JS Logic ---
+        function cleanAndNormalize(str) {
+            if (!str) return "";
+            return str
+                .toLowerCase()
+                .replace(/[\r\n]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function detectOperation(filename, jsonRows, sheetName = "") {
+            const fn = filename.toLowerCase();
+            const sn = sheetName.toLowerCase();
+            
+            // Build a text string from the first 15 rows to search in
+            let contentText = "";
+            if (jsonRows && jsonRows.length > 0) {
+                contentText = JSON.stringify(jsonRows.slice(0, 15)).toLowerCase();
+            }
+            
+            // Helper to check if any of the terms are in filename, sheet name or row content
+            function has(term) {
+                return fn.includes(term) || sn.includes(term) || contentText.includes(term);
+            }
+            
+            // Check PET cleaning first (more specific than pet feeder/pet)
+            if (has("pet_cleaning") || has("pet cleaning") || has("vệ sinh pet") || has("ve sinh pet") || (has("vệ sinh") && has("pet"))) {
+                return "pet_cleaning";
+            }
+            
+            // Check PET feeder
+            if (has("pet_feeder") || has("pet feeder") || has("cấp pet") || has("cap pet") || has("nạp pet") || has("nap pet")) {
+                return "pet_feeder";
+            }
+            
+            // Check Dehumidifier
+            if (has("dehumidifier") || has("hút ẩm") || has("hut am")) {
+                return "dehumidifier";
+            }
+            
+            // Check Baking Oven
+            if (has("baking_oven") || has("baking oven") || has("lò nướng") || has("lo nuong")) {
+                return "baking_oven";
+            }
+            
+            // Check Keeping Oven
+            if (has("keeping_oven") || has("keeping oven") || has("lò ủ") || has("lo u")) {
+                return "keeping_oven";
+            }
+            
+            // Check Prebake Oven
+            if (has("prebake_oven") || has("prebake oven") || has("sấy sơ bộ") || has("say so bo")) {
+                return "prebake_oven";
+            }
+            
+            // Check Drying Oven
+            if (has("drying_oven") || has("drying oven") || has("sấy khô") || has("say kho")) {
+                return "drying_oven";
+            }
+            
+            // Check Diecut 5 hold
+            if (has("diecut_5_hold") || has("diecut 5 hold") || has("diecut 5") || has("die-cut 5")) {
+                return "diecut_5_hold";
+            }
+            
+            // Check UV diecut
+            if (has("uv_diecut") || has("uv diecut") || has("uv_die-cut") || (has("uv") && has("diecut"))) {
+                return "uv_diecut";
+            }
+            
+            // Check UV replication
+            if (has("uv_replication") || has("uv replication") || (has("uv") && has("replication"))) {
+                return "uv_replication";
+            }
+            
+            // Standard checks for other operations (English keywords)
+            const operations = [
+                "punching", "outer", "dispenser", "uv", "plasma", "demold", "avi", "vacuum", "laser", "mvi"
+            ];
+            for (const op of operations) {
+                if (has(op) || has(op.replace('_', ' '))) {
+                    return op;
+                }
+            }
+            
+            return "";
+        }
+
+        // --- Authenticated Data Sync Module ---
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            checkAuthSession();
+        });
+
+        async function checkAuthSession() {
+            try {
+                const res = await fetch('/api/v1/auth/me');
+                if (!res.ok) {
+                    throw new Error('Unauthorized');
+                }
+                const user = await res.json();
+                currentUser = user;
+                
+                if (user.role !== 'admin') {
+                    window.location.href = '/dashboard';
+                    return;
+                }
+
+                document.getElementById('profile-username').innerText = user.username;
+                document.getElementById('profile-role').innerText = user.role === 'admin' ? 'Quản trị viên (Admin)' : 'Người kiểm tra (Operator)';
+                document.getElementById('profile-initial').innerText = user.username.charAt(0).toUpperCase();
+
+                lucide.createIcons();
+            } catch (err) {
+                window.location.href = '/login';
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/v1/auth/logout', { method: 'POST' });
+                window.location.href = '/login';
+            } catch (err) {
+                showToast('Failed to log out', 'error');
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const iconName = type === 'success' ? 'check-circle' : 'alert-triangle';
+            toast.innerHTML = `<i data-lucide="${iconName}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            lucide.createIcons();
+            setTimeout(() => {
+                toast.style.animation = 'toastIn 0.3s reverse forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        async function handleSpecUpload(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            const file = files[0];
+            const filename = file.name.toLowerCase();
+
+            if (filename.endsWith('.json')) {
+                // Parse as JSON Spec Configuration
+                try {
+                    const fileContent = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = e => resolve(e.target.result);
+                        reader.onerror = e => reject(e.target.error);
+                        reader.readAsText(file);
+                    });
+
+                    const specData = JSON.parse(fileContent);
+
+                    if (!specData.operation || !specData.title || !Array.isArray(specData.items)) {
+                        showToast('Tệp Spec JSON không hợp lệ. Phải chứa các trường: operation, title, items[]', 'error');
+                        return;
+                    }
+
+                    // Guess project from filename to separate templates for duplicate operations
+                    let project = specData.project;
+                    if (!project) {
+                        const lowerFilename = filename.toLowerCase();
+                        if (lowerFilename.startsWith('co_') || lowerFilename.includes('co-molded') || lowerFilename.includes('co_molded') || lowerFilename.includes('co-mold') || lowerFilename.includes('co_mold')) {
+                            project = "Co-molded";
+                        } else if (lowerFilename.startsWith('se_') || lowerFilename.includes('se-') || lowerFilename.includes('se_')) {
+                            project = "SE";
+                        } else {
+                            project = "SE"; // Default fallback
+                        }
+                    }
+
+                    const prefix = project === "Co-molded" ? "co_" : "se_";
+                    let opKey = specData.operation.toLowerCase();
+                    if (!opKey.startsWith('co_') && !opKey.startsWith('se_')) {
+                        opKey = prefix + opKey;
+                    }
+
+                    specData.operation = opKey;
+                    specData.project = project;
+
+                    await saveSpecTemplate(specData);
+                } catch (err) {
+                    showToast(`Lỗi phân tích JSON: ${err.message}`, 'error');
+                } finally {
+                    event.target.value = '';
+                }
+            } else if (filename.endsWith('.xlsx') || filename.endsWith('.xls')) {
+                // Parse as Excel Spec Template
+                showToast(`Đang phân tích tệp Excel Spec: ${file.name}...`, 'success');
+                try {
+                    const data = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = e => resolve(new Uint8Array(e.target.result));
+                        reader.onerror = e => reject(e.target.error);
+                        reader.readAsArrayBuffer(file);
+                    });
+
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    if (jsonRows.length === 0) {
+                        throw new Error('Tệp Excel trống hoặc không có dữ liệu đọc được.');
+                    }
+
+                    // Scan for header row containing label & spec keywords using robust scoring-based row matching
+                    let headerRowIdx = -1;
+                    let sttCol = -1;
+                    let catCol = -1;
+                    let labelCol = -1;
+                    let specCol = -1;
+                    let freqCol = -1;
+                    let methodCol = -1;
+                    let bestScore = 0;
+
+                    for (let r = 0; r < Math.min(25, jsonRows.length); r++) {
+                        const row = jsonRows[r];
+                        if (!row) continue;
+                        
+                        let score = 0;
+                        let tempStt = -1, tempCat = -1, tempLabel = -1, tempSpec = -1, tempFreq = -1, tempMethod = -1;
+                        
+                        for (let c = 0; c < row.length; c++) {
+                            const val = String(row[c] || '').trim().toLowerCase();
+                            if (!val) continue;
+
+                            if (val === 'stt' || val === 'no' || val === 'index' || val.startsWith('stt/') || val.startsWith('no/')) {
+                                tempStt = c;
+                                score += 2;
+                            }
+                            if (val.includes('hạng mục') || val.includes('phân loại') || val.includes('category')) {
+                                tempCat = c;
+                                score += 2;
+                            }
+                            if (val.includes('chi tiết') || val.includes('nội dung') || val.includes('checklist') || val.includes('item') || val.includes('label')) {
+                                tempLabel = c;
+                                score += 2;
+                            }
+                            if (val.includes('tiêu chuẩn') || (val.includes('spec') && !val.includes('inspection')) || val.includes('yêu cầu') || val.includes('standard') || val.includes('evaluation')) {
+                                tempSpec = c;
+                                score += 2;
+                            }
+                            if (val.includes('tần suất') || val.includes('frequency') || val.includes('chu kỳ')) {
+                                tempFreq = c;
+                                score += 2;
+                            }
+                            if (val.includes('phương pháp') || val.includes('cách làm') || val.includes('method') || val.includes('phương thức')) {
+                                tempMethod = c;
+                                score += 2;
+                            }
+                        }
+                        
+                        // We require at least STT/No OR Chi tiết/Label to be matched, and a minimum score of 4
+                        if (score > bestScore && (tempStt !== -1 || tempLabel !== -1) && score >= 4) {
+                            bestScore = score;
+                            headerRowIdx = r;
+                            sttCol = tempStt;
+                            catCol = tempCat;
+                            labelCol = tempLabel;
+                            specCol = tempSpec;
+                            freqCol = tempFreq;
+                            methodCol = tempMethod;
+                        }
+                    }
+
+                    // Fallback to default columns if not found
+                    if (labelCol === -1) labelCol = 1;
+                    if (sttCol === -1) sttCol = 0;
+                    if (headerRowIdx === -1) headerRowIdx = 0;
+
+                    const items = [];
+                    let itemIndex = 1;
+                    
+                    // Merged cell forward-filling helpers
+                    let lastValidCat = "";
+                    let lastValidLabel = "";
+
+                    function normalizeFrequency(freq) {
+                        if (!freq) return '1lần/ca';
+                        let clean = String(freq).replace(/\r/g, '').replace(/\n/g, ' ').trim().toLowerCase();
+                        
+                        if (clean.includes('ca') || clean.includes('shift')) {
+                            return '1lần/ca';
+                        }
+                        if (clean.includes('ngày') || clean.includes('day')) {
+                            return '1lần/ngày';
+                        }
+                        if (clean.includes('khởi động') || clean.includes('start up') || clean.includes('startup')) {
+                            return '1lần/khởi động';
+                        }
+                        return freq;
+                    }
+
+                    // Parse row items starting after headerRowIdx
+                    for (let r = headerRowIdx + 1; r < jsonRows.length; r++) {
+                        const row = jsonRows[r];
+                        if (!row) continue;
+                        
+                        let catVal = catCol !== -1 ? String(row[catCol] || '').trim() : '';
+                        let labelVal = String(row[labelCol] || '').trim();
+                        
+                        // Handle forward fill for vertically merged categories and labels
+                        if (!catVal) catVal = lastValidCat;
+                        else lastValidCat = catVal;
+
+                        if (!labelVal) labelVal = lastValidLabel;
+                        else lastValidLabel = labelVal;
+
+                        if (!labelVal || labelVal.toLowerCase().includes('ghi chú') || labelVal.toLowerCase().includes('ký tên')) continue;
+
+                        const specVal = specCol !== -1 ? String(row[specCol] || '').trim() : '-';
+                        const freqValRaw = freqCol !== -1 ? String(row[freqCol] || '').trim() : '1lần/ca';
+                        const freqVal = normalizeFrequency(freqValRaw);
+                        const methodVal = methodCol !== -1 ? String(row[methodCol] || '').trim() : 'Quan sát';
+
+                        // Guess type: only number if it has numeric spec conditions
+                        let itemType = 'pass_fail';
+                        const specLower = specVal.toLowerCase();
+                        const labelLower = labelVal.toLowerCase();
+                        
+                        // Check if the spec looks like a numeric requirement
+                        const hasDigits = specLower.match(/\d+/);
+                        const isNumericSpec = hasDigits && (
+                            specLower.includes('±') || specLower.includes('~') || specLower.includes('+-') || specLower.includes('+/-') ||
+                            specLower.includes('<=') || specLower.includes('>=') || specLower.includes('≤') || specLower.includes('≥') ||
+                            // Matches range with word "to" between numbers
+                            specLower.match(/\d+\s*to\s*\d+/) ||
+                            // Matches digits with specific measurement units
+                            specLower.match(/\d+\s*(?:mm|cm|pa|°c| độ|kg|v|a|tấn|hz|w|n|bar|psi|kpa|mpa|min|max)\b/) ||
+                            // Matches single standalone units or seconds
+                            specLower.match(/\b\d+\s*(?:s|a|v|w|n)\b/)
+                        );
+                        
+                        // Exclude common visual/frequency false matches like "1 lần", "1 ca", "1lần", "1ca"
+                        const isFrequencyOnly = specLower.includes('lần') || specLower.includes('ca') || specLower.includes('shift') || specLower.includes('times');
+
+                        if (isNumericSpec && !isFrequencyOnly) {
+                            itemType = 'number';
+                        }
+
+                        items.push({
+                            id: `excel_item_${itemIndex++}`,
+                            category: catVal || 'Hạng mục chung',
+                            label: labelVal,
+                            spec: specVal,
+                            frequency: freqVal,
+                            method: methodVal,
+                            type: itemType,
+                            required: true
+                        });
+                    }
+
+                    if (items.length === 0) {
+                        throw new Error('Không tìm thấy hạng mục kiểm tra hợp lệ nào trong tệp Excel.');
+                    }
+
+                    // Guess operation from filename or Excel content rows
+                    let matchedOp = detectOperation(filename, jsonRows, firstSheetName);
+                    if (!matchedOp) matchedOp = "laser"; // Default fallback
+
+                    // Guess project from filename to separate templates for duplicate operations
+                    let project = "SE"; // Default fallback
+                    const lowerFilename = filename.toLowerCase();
+                    if (lowerFilename.startsWith('co_') || lowerFilename.includes('co-molded') || lowerFilename.includes('co_molded') || lowerFilename.includes('co-mold') || lowerFilename.includes('co_mold')) {
+                        project = "Co-molded";
+                    } else if (lowerFilename.startsWith('se_') || lowerFilename.includes('se-') || lowerFilename.includes('se_')) {
+                        project = "SE";
+                    }
+
+                    const prefix = project === "Co-molded" ? "co_" : "se_";
+                    const operationKey = prefix + matchedOp;
+                    const displayProject = project === "Co-molded" ? "Co-molded" : "SE";
+                    const title = `Kiểm Tra Công Đoạn ${displayProject} ${matchedOp.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}`;
+
+                    const specData = {
+                        operation: operationKey,
+                        title: title,
+                        description: `Cấu hình tiêu chuẩn cho dự án ${displayProject}, công đoạn ${matchedOp.toUpperCase()} (File: ${file.name})`,
+                        items: items
+                    };
+
+                    await saveSpecTemplate(specData);
+                } catch (err) {
+                    showToast(`Lỗi đọc file Excel: ${err.message}`, 'error');
+                } finally {
+                    event.target.value = '';
+                }
+            } else {
+                showToast('Định dạng tệp không được hỗ trợ. Vui lòng chọn .json hoặc .xlsx/.xls', 'error');
+                event.target.value = '';
+            }
+        }
+
+        async function saveSpecTemplate(specData) {
+            showToast(`Đang lưu cấu hình Spec cho: ${specData.title}...`, 'success');
+            const response = await fetch('/api/v1/templates/by-operation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(specData)
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Lỗi khi lưu cấu hình Spec lên SQLite database');
+            }
+
+            const result = await response.json();
+            showToast(`Khai báo thành công cấu hình Spec công đoạn: ${result.title}!`, 'success');
+        }
+
+        async function handleDataUpload(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            const targetFiles = Array.from(files).filter(f => {
+                const name = f.name.toLowerCase();
+                return name.endsWith('.json') || name.endsWith('.xlsx') || name.endsWith('.xls');
+            });
+
+            if (targetFiles.length === 0) {
+                showToast('Vui lòng chọn tệp kết quả (.json, .xlsx, .xls)', 'error');
+                return;
+            }
+
+            showToast(`Đang đồng bộ ${targetFiles.length} tệp kết quả...`, 'success');
+
+            let successCount = 0;
+            let failCount = 0;
+
+            for (const file of targetFiles) {
+                try {
+                    const filename = file.name.toLowerCase();
+                    if (filename.endsWith('.json')) {
+                        const fileContent = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = e => resolve(e.target.result);
+                            reader.onerror = e => reject(e.target.error);
+                            reader.readAsText(file);
+                        });
+
+                        const data = JSON.parse(fileContent);
+                        const result = await importChecksheetData(data);
+
+                        if (result.success) {
+                            successCount++;
+                        } else {
+                            console.error(`Import failed for ${file.name}:`, result.error);
+                            failCount++;
+                        }
+                    } else if (filename.endsWith('.xlsx') || filename.endsWith('.xls')) {
+                        const result = await importExcelChecksheetReport(file);
+                        if (result.success) {
+                            successCount++;
+                        } else {
+                            console.error(`Excel Report Import failed for ${file.name}:`, result.error);
+                            failCount++;
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Error processing file ${file.name}:`, err);
+                    failCount++;
+                }
+            }
+
+            if (successCount > 0) {
+                showToast(`Đã đồng bộ thành công ${successCount} tệp kết quả lên hệ thống!`, 'success');
+            }
+            if (failCount > 0) {
+                showToast(`Có ${failCount} tệp kết quả gặp lỗi đồng bộ!`, 'error');
+            }
+
+            event.target.value = '';
+        }
+
+        function evaluateNumericSpec(value, spec) {
+            if (value === null || value === undefined || value === '') return 'NA';
+            const val = parseFloat(value);
+            if (isNaN(val)) return 'NA';
+
+            const specClean = String(spec || '').trim().replace(/\s+/g, '').toLowerCase();
+            if (!specClean || specClean === '-') return 'Pass';
+
+            try {
+                // Range check like 0.5~1.5 or 0.5-1.5
+                if (specClean.includes('~') || specClean.includes('to')) {
+                    const parts = specClean.split(/[~]|to/);
+                    const min = parseFloat(parts[0]);
+                    const max = parseFloat(parts[1]);
+                    if (!isNaN(min) && !isNaN(max)) {
+                        return (val >= min && val <= max) ? 'Pass' : 'Fail';
+                    }
+                }
+                
+                // Plus-minus check like 30±5 or 30+-5
+                if (specClean.includes('±') || specClean.includes('+/-') || specClean.includes('+-')) {
+                    const separator = specClean.includes('±') ? '±' : (specClean.includes('+/-') ? '+/-' : '+-');
+                    const parts = specClean.split(separator);
+                    const base = parseFloat(parts[0]);
+                    const tolerance = parseFloat(parts[1]);
+                    if (!isNaN(base) && !isNaN(tolerance)) {
+                        return (val >= (base - tolerance) && val <= (base + tolerance)) ? 'Pass' : 'Fail';
+                    }
+                }
+
+                // Greater than or equal to: >= or ≤
+                if (specClean.includes('>=') || specClean.includes('≥')) {
+                    const limit = parseFloat(specClean.replace(/>=|≥/, ''));
+                    if (!isNaN(limit)) return val >= limit ? 'Pass' : 'Fail';
+                }
+
+                // Less than or equal to: <= or ≤
+                if (specClean.includes('<=') || specClean.includes('≤')) {
+                    const limit = parseFloat(specClean.replace(/<=|≤/, ''));
+                    if (!isNaN(limit)) return val <= limit ? 'Pass' : 'Fail';
+                }
+
+                // Greater than: >
+                if (specClean.includes('>')) {
+                    const limit = parseFloat(specClean.replace('>', ''));
+                    if (!isNaN(limit)) return val > limit ? 'Pass' : 'Fail';
+                }
+
+                // Less than: <
+                if (specClean.includes('<')) {
+                    const limit = parseFloat(specClean.replace('<', ''));
+                    if (!isNaN(limit)) return val < limit ? 'Pass' : 'Fail';
+                }
+
+                // Exact match or single number fallback (e.g. spec is "12")
+                const singleNum = parseFloat(specClean.match(/[-+]?[0-9]*\.?[0-9]+/));
+                if (!isNaN(singleNum)) {
+                    return val === singleNum ? 'Pass' : 'Fail';
+                }
+
+            } catch (e) {
+                console.error('Error evaluating spec:', spec, e);
+            }
+
+            return 'Pass'; // Default fallback
+        }
+
+        async function importExcelChecksheetReport(file) {
+            try {
+                const filename = file.name.toLowerCase();
+                
+                // 1. Read Excel data first to allow scanning content
+                const buffer = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(new Uint8Array(e.target.result));
+                    reader.onerror = e => reject(e.target.error);
+                    reader.readAsArrayBuffer(file);
+                });
+
+                const workbook = XLSX.read(buffer, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                if (jsonRows.length === 0) {
+                    return { success: false, error: 'Tệp Excel trống' };
+                }
+
+                // 2. Guess operation from filename or Excel content rows
+                let matchedOp = detectOperation(filename, jsonRows, firstSheetName);
+                if (!matchedOp) matchedOp = "laser"; // default fallback
+
+                // Determine project
+                let project = "SE"; // Default fallback
+                const coMoldedOnlyOps = ["vacuum", "laser", "pet_feeder", "pet_cleaning", "uv_diecut", "uv_replication", "mvi", "dehumidifier"];
+                const seOnlyOps = ["diecut_5_hold", "drying_oven"];
+
+                if (coMoldedOnlyOps.includes(matchedOp)) {
+                    project = "Co-molded";
+                } else if (seOnlyOps.includes(matchedOp)) {
+                    project = "SE";
+                } else {
+                    project = filename.includes('co-molded') || filename.includes('co_molded') || filename.startsWith('co_') ? 'Co-molded' : 'SE';
+                }
+
+                const prefix = project === "Co-molded" ? "co_" : "se_";
+                const lookupOp = prefix + matchedOp;
+
+                // 3. Fetch corresponding template
+                const tplRes = await fetch(`/api/v1/templates/by-operation?operation=${encodeURIComponent(lookupOp)}&project=${encodeURIComponent(project)}`);
+                if (!tplRes.ok) {
+                    return { success: false, error: `Không tìm thấy Spec tiêu chuẩn cho công đoạn: ${matchedOp} (${project})` };
+                }
+                const template = await tplRes.json();
+
+                // 4. Scan for Hạng mục & Kết quả columns using robust scoring
+                let headerRowIdx = -1;
+                let labelCol = -1;
+                let resultCol = -1;
+                let bestScore = 0;
+
+                for (let r = 0; r < Math.min(25, jsonRows.length); r++) {
+                    const row = jsonRows[r];
+                    if (!row) continue;
+                    
+                    let score = 0;
+                    let tempLabel = -1;
+                    let tempResult = -1;
+                    
+                    for (let c = 0; c < row.length; c++) {
+                        const val = String(row[c] || '').trim().toLowerCase();
+                        if (!val) continue;
+
+                        if (val.includes('chi tiết') || val.includes('nội dung') || val.includes('checklist') || val.includes('item') || val.includes('label')) {
+                            tempLabel = c;
+                            score += 2;
+                        }
+                        
+                        const isSpec = val.includes('tiêu chuẩn') || (val.includes('spec') && !val.includes('inspection')) || val.includes('yêu cầu') || val.includes('standard') || val.includes('evaluation');
+                        if (!isSpec && (val.includes('kết quả') || val === 'đánh giá' || val.includes('result') || val.includes('value') || val.includes('trạng thái') || val.includes('status') || val === 'ok/ng')) {
+                            tempResult = c;
+                            score += 2;
+                        }
+                        
+                        if (val === 'stt' || val === 'no' || val === 'index' || val.startsWith('stt/') || val.startsWith('no/')) {
+                            score += 1;
+                        }
+                        if (val.includes('hạng mục') || val.includes('phân loại') || val.includes('category')) {
+                            score += 1;
+                        }
+                        if (val.includes('tần suất') || val.includes('frequency')) {
+                            score += 1;
+                        }
+                        if (val.includes('phương pháp') || val.includes('method')) {
+                            score += 1;
+                        }
+                    }
+                    
+                    if (score > bestScore && tempLabel !== -1 && score >= 3) {
+                         bestScore = score;
+                         headerRowIdx = r;
+                         labelCol = tempLabel;
+                         resultCol = tempResult;
+                    }
+                }
+
+                if (labelCol === -1) labelCol = 2; // Default to column index 2 (Chi tiết kiểm tra / Label)
+                if (resultCol === -1) resultCol = 6; // Default to column index 6 (Kết quả / Result)
+                if (headerRowIdx === -1) headerRowIdx = 0;
+
+                // 5. Parse responses matching template items
+                const responses = {};
+
+                template.items.forEach(tItem => {
+                    let matchedRow = null;
+                    let matchedRowIdx = -1;
+                    const itemCleanLabel = cleanAndNormalize(tItem.label.split(' (Spec:')[0]);
+
+                    // Smart forward-fill storage per column
+                    let lastValidVals = {};
+
+                    for (let r = headerRowIdx + 1; r < jsonRows.length; r++) {
+                        const row = jsonRows[r];
+                        if (!row) continue;
+                        
+                        // Check if any cell in this row (or forward-filled from previous row) matches the template label
+                        let isMatch = false;
+                        for (let colIdx = 0; colIdx < row.length; colIdx++) {
+                            let cellVal = String(row[colIdx] || '').trim();
+                            if (!cellVal) {
+                                cellVal = lastValidVals[colIdx] || "";
+                            } else {
+                                lastValidVals[colIdx] = cellVal;
+                            }
+                            
+                            const normCellVal = cleanAndNormalize(cellVal);
+                            if (normCellVal && (normCellVal.includes(itemCleanLabel) || itemCleanLabel.includes(normCellVal))) {
+                                isMatch = true;
+                                matchedRow = row;
+                                matchedRowIdx = r;
+                                break;
+                            }
+                        }
+                        if (isMatch) break;
+                    }
+
+                    if (matchedRow) {
+                        // Extract rawVal by scanning matchedRow and nextRow
+                        let rawVal = "";
+                        
+                        // 1. Scan matchedRow (skip Column A/B if it is a number type, to prevent STT matching)
+                        for (let c = 0; c < matchedRow.length; c++) {
+                            const cellStr = String(matchedRow[c] || '').trim();
+                            if (!cellStr) continue;
+                            if (cellStr.includes('●') || cellStr.includes('□') || cellStr.includes('○') || cellStr.includes('■') || 
+                                cellStr.includes('✔') || cellStr.includes('☑') || cellStr.includes('þ') || cellStr.includes('ü') || 
+                                cellStr.includes('☒') || cellStr.includes('✘') || cellStr.includes('✗') || 
+                                ['ok', 'ng', 'na', 'pass', 'fail', 'đạt', 'lỗi'].includes(cellStr.toLowerCase())) {
+                                rawVal = cellStr;
+                                break;
+                            }
+                        }
+                        
+                        // 2. Scan nextRow if not found in matchedRow
+                        if (!rawVal && matchedRowIdx !== -1 && (matchedRowIdx + 1) < jsonRows.length) {
+                            const nextRow = jsonRows[matchedRowIdx + 1];
+                            if (nextRow) {
+                                for (let c = 0; c < nextRow.length; c++) {
+                                    const cellStr = String(nextRow[c] || '').trim();
+                                    if (!cellStr) continue;
+                                    if (cellStr.includes('●') || cellStr.includes('□') || cellStr.includes('○') || cellStr.includes('■') || 
+                                        cellStr.includes('✔') || cellStr.includes('☑') || cellStr.includes('þ') || cellStr.includes('ü') || 
+                                        cellStr.includes('☒') || cellStr.includes('✘') || cellStr.includes('✗') || 
+                                        ['ok', 'ng', 'na', 'pass', 'fail', 'đạt', 'lỗi'].includes(cellStr.toLowerCase())) {
+                                        rawVal = cellStr;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // 3. Scan for numeric value if tItem.type is number
+                        if (tItem.type === 'number') {
+                            let foundNum = "";
+                            for (let c = 2; c < matchedRow.length; c++) { // Skip col 0 and 1 (STT / A / B)
+                                const cellStr = String(matchedRow[c] || '').trim();
+                                if (cellStr && !isNaN(parseFloat(cellStr)) && isFinite(cellStr)) {
+                                    foundNum = cellStr;
+                                    break;
+                                }
+                            }
+                            if (!foundNum && matchedRowIdx !== -1 && (matchedRowIdx + 1) < jsonRows.length) {
+                                const nextRow = jsonRows[matchedRowIdx + 1];
+                                if (nextRow) {
+                                    for (let c = 2; c < nextRow.length; c++) { // Skip col 0 and 1
+                                        const cellStr = String(nextRow[c] || '').trim();
+                                        if (cellStr && !isNaN(parseFloat(cellStr)) && isFinite(cellStr)) {
+                                            foundNum = cellStr;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if (foundNum) {
+                                rawVal = foundNum;
+                            }
+                        }
+
+                        const rawLower = rawVal.toLowerCase();
+                        let status = null;
+                        let value = rawVal;
+
+                        const isOk = rawLower === 'đạt' || rawLower === 'ok' || rawLower === 'pass' || rawLower === 'y' || rawLower === 'yes' || rawLower === 'o' || rawLower === '○' || rawLower === 'v' ||
+                                     rawLower.includes('●') || rawLower.includes('■') || rawLower.includes('✔') || rawLower.includes('☑') || rawLower.includes('þ') || rawLower.includes('ü');
+                        
+                        const isNg = rawLower === 'lỗi' || rawLower === 'ng' || rawLower === 'fail' || rawLower === 'n' || rawLower === 'no' || rawLower === 'x' ||
+                                     rawLower.includes('☒') || rawLower.includes('✘') || rawLower.includes('✗');
+                        
+                        const isNa = rawLower === 'na' || rawLower === 'n/a' || rawLower === '-' || rawLower.includes('□');
+
+                        if (isOk) {
+                            status = 'Pass';
+                            value = tItem.type === 'number' ? '' : 'Pass';
+                        } else if (isNg) {
+                            status = 'Fail';
+                            value = tItem.type === 'number' ? '' : 'Fail';
+                        } else if (isNa) {
+                            status = 'NA';
+                            value = '';
+                        } else if (tItem.type === 'number' && rawVal !== '') {
+                            const numMatch = rawVal.replace(/[^\d.-]/g, '');
+                            if (numMatch && !isNaN(parseFloat(numMatch))) {
+                                value = numMatch;
+                                status = evaluateNumericSpec(numMatch, tItem.spec);
+                            } else {
+                                status = 'NA';
+                                value = '';
+                            }
+                        } else {
+                            status = 'NA';
+                            value = '';
+                        }
+
+                        responses[tItem.id] = {
+                            value: value,
+                            status: status,
+                            comment: ''
+                        };
+                    } else {
+                        responses[tItem.id] = { value: null, status: null, comment: null };
+                    }
+                });
+
+                // 6. Save checksheet
+                const title = template.title + " Report";
+                
+                // project is already determined at the top!
+
+                const conductedDate = new Date().toISOString().split('T')[0];
+                const fillerName = 'Excel Report Ingester';
+                const status = 'Submitted';
+
+                const checksheetsRes = await fetch(`/api/v1/checksheets?project=${encodeURIComponent(project)}&operation=${encodeURIComponent(matchedOp)}&date=${encodeURIComponent(conductedDate)}`);
+                let existingCs = null;
+                if (checksheetsRes.ok) {
+                    const list = await checksheetsRes.json();
+                    existingCs = list.find(c => c.status === status) || list[0];
+                }
+
+                const payload = {
+                    template_id: template.id,
+                    title: title,
+                    status: status,
+                    filler_name: fillerName,
+                    project: project,
+                    operation: matchedOp,
+                    conducted_date: conductedDate,
+                    responses: responses
+                };
+
+                let saveUrl = '/api/v1/checksheets';
+                let method = 'POST';
+
+                if (existingCs) {
+                    saveUrl = `/api/v1/checksheets/${existingCs.id}`;
+                    method = 'PUT';
+                }
+
+                const saveRes = await fetch(saveUrl, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!saveRes.ok) {
+                    const errData = await saveRes.json();
+                    return { success: false, error: errData.error || 'Failed to save checksheet from Excel' };
+                }
+
+                return { success: true };
+            } catch (err) {
+                return { success: false, error: err.message };
+            }
+        }
+
+        async function importChecksheetData(jsonData) {
+            try {
+                const title = jsonData.title || jsonData.v_title || 'Imported Checksheet';
+                const operation = jsonData.operation || '';
+                
+                // Intelligent project matching
+                let project = jsonData.project;
+                if (!project) {
+                    const coMoldedOnlyOps = ["vacuum", "laser", "pet_feeder", "pet_cleaning", "uv_diecut", "uv_replication", "mvi", "dehumidifier"];
+                    const seOnlyOps = ["diecut_5_hold", "drying_oven"];
+                    if (coMoldedOnlyOps.includes(operation)) {
+                        project = "Co-molded";
+                    } else if (seOnlyOps.includes(operation)) {
+                        project = "SE";
+                    } else {
+                        project = "SE"; // Default fallback
+                    }
+                }
+                
+                const conductedDate = jsonData.conducted_date || jsonData.date || new Date().toISOString().split('T')[0];
+                const fillerName = jsonData.filler_name || jsonData.inspector || 'System Importer';
+                const status = jsonData.status || 'Submitted';
+
+                if (!operation) {
+                    return { success: false, error: 'Thiếu thông tin công đoạn (operation)' };
+                }
+
+                const prefix = project === "Co-molded" ? "co_" : "se_";
+                let lookupOp = operation;
+                if (!lookupOp.startsWith('co_') && !lookupOp.startsWith('se_')) {
+                    lookupOp = prefix + lookupOp;
+                }
+
+                const tplRes = await fetch(`/api/v1/templates/by-operation?operation=${encodeURIComponent(lookupOp)}&project=${encodeURIComponent(project)}`);
+                if (!tplRes.ok) {
+                    return { success: false, error: `Không tìm thấy mẫu thiết kế cho công đoạn: ${operation} (${project})` };
+                }
+                const template = await tplRes.json();
+                const templateId = template.id;
+
+                const responses = {};
+                if (jsonData.responses) {
+                    Object.assign(responses, jsonData.responses);
+                } else if (Array.isArray(jsonData.items)) {
+                    template.items.forEach(tItem => {
+                        const matched = jsonData.items.find(jItem => 
+                            jItem.id === tItem.id ||
+                            cleanAndNormalize(jItem.label) === cleanAndNormalize(tItem.label) ||
+                            (jItem.label && tItem.label && (
+                                cleanAndNormalize(jItem.label).includes(cleanAndNormalize(tItem.label)) ||
+                                cleanAndNormalize(tItem.label).includes(cleanAndNormalize(jItem.label))
+                            ))
+                        );
+                        if (matched) {
+                            responses[tItem.id] = {
+                                value: matched.value !== undefined ? matched.value : (matched.status || ''),
+                                status: matched.status || null,
+                                comment: matched.comment || null
+                            };
+                        } else {
+                            responses[tItem.id] = { value: null, status: null, comment: null };
+                        }
+                    });
+                    if (jsonData.signature || jsonData.signatureData) {
+                        responses['__signature__'] = {
+                            value: jsonData.signature || jsonData.signatureData,
+                            status: 'Pass',
+                            comment: 'Digital Signature'
+                        };
+                    }
+                }
+
+                const checksheetsRes = await fetch(`/api/v1/checksheets?project=${encodeURIComponent(project)}&operation=${encodeURIComponent(operation)}&date=${encodeURIComponent(conductedDate)}`);
+                let existingCs = null;
+                if (checksheetsRes.ok) {
+                    const list = await checksheetsRes.json();
+                    existingCs = list.find(c => c.status === status) || list[0];
+                }
+
+                const payload = {
+                    template_id: templateId,
+                    title: title,
+                    status: status,
+                    filler_name: fillerName,
+                    project: project,
+                    operation: operation,
+                    conducted_date: conductedDate,
+                    responses: responses
+                };
+
+                let saveUrl = '/api/v1/checksheets';
+                let method = 'POST';
+
+                if (existingCs) {
+                    saveUrl = `/api/v1/checksheets/${existingCs.id}`;
+                    method = 'PUT';
+                }
+
+                const saveRes = await fetch(saveUrl, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!saveRes.ok) {
+                    const errData = await saveRes.json();
+                    return { success: false, error: errData.error || 'Failed to save checksheet' };
+                }
+
+                const savedData = await saveRes.json();
+                return { success: true, data: savedData };
+
+            } catch (err) {
+                return { success: false, error: err.message };
+            }
+        }
+    </script>
+</body>
+</html>

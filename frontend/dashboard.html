@@ -1,0 +1,2648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xOCS - Compliance Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* --- Base Premium Glassmorphic Stylesheet --- */
+        :root {
+            color-scheme: light;
+            --font-primary: 'Inter', sans-serif;
+            --font-heading: 'Inter', sans-serif;
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-fast: all 0.15s ease;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --bg-app: linear-gradient(135deg, #f5f7fb 0%, #eef2f9 100%);
+            --bg-glass: rgba(255, 255, 255, 0.85);
+            --bg-glass-card: rgba(255, 255, 255, 0.95);
+            --bg-glass-active: rgba(37, 99, 235, 0.08);
+            --border-glass: rgba(37, 99, 235, 0.12);
+            --text-primary: #1e293b;
+            --text-muted: #64748b;
+            --primary-color: #2563eb;
+            --primary-glow: rgba(37, 99, 235, 0.25);
+            --secondary-color: #0ea5e9;
+            --success-color: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
+            --danger-color: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.2);
+            --warning-color: #f59e0b;
+            --shadow-premium: 0 10px 30px -10px rgba(37, 99, 235, 0.08), 0 1px 3px rgba(37, 99, 235, 0.03);
+            --input-bg: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-primary); }
+        body { background: var(--bg-app); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; }
+        h1, h2, h3 { font-family: var(--font-heading); font-weight: 600; }
+        
+        .app-container { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; padding: 30px 20px; display: flex; flex-direction: column; height: 100vh; position: fixed; left: 0; top: 0; z-index: 100; }
+        .main-content { flex: 1; margin-left: 260px; padding: 40px; min-height: 100vh; }
+        
+        .glass { background: var(--bg-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--border-glass); box-shadow: var(--shadow-premium); }
+        
+        /* Sidebar layout */
+        .sidebar .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; padding-left: 10px; }
+        .brand-icon { width: 38px; height: 38px; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px var(--primary-glow); }
+        .brand-icon i { color: #fff; width: 20px; height: 20px; }
+        .brand h2 { font-size: 24px; font-weight: 800; background: linear-gradient(to right, var(--text-primary), var(--primary-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .nav-menu { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+        .nav-item { display: flex; align-items: center; gap: 15px; padding: 12px 18px; color: var(--text-muted); text-decoration: none; border-radius: var(--radius-md); font-size: 15px; font-weight: 500; transition: var(--transition-smooth); }
+        .nav-item i { width: 18px; height: 18px; }
+        .nav-item:hover, .nav-item.active { color: var(--primary-color); background: var(--bg-glass-active); transform: translateX(5px); }
+        .nav-item.active { box-shadow: inset 3px 0 0 var(--primary-color); font-weight: 600; }
+        
+        .nav-btn { margin-top: 20px; background: linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(14,165,233,0.08) 100%); border: 1px dashed rgba(37, 99, 235, 0.2); color: var(--primary-color); }
+        .nav-btn:hover { background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: #fff; border-style: solid; }
+        
+        .sidebar-footer { margin-top: auto; display: flex; flex-direction: column; gap: 15px; }
+        .app-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); padding-left: 10px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--success-color); box-shadow: 0 0 8px var(--success-glow); }
+        
+        /* Dashboard cards */
+        .page-header { margin-bottom: 35px; }
+        .page-header h1 { font-size: 32px; font-weight: 800; color: var(--text-primary); }
+        .page-header .subtitle { color: var(--text-muted); margin-top: 5px; font-size: 16px; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 25px; margin-bottom: 40px; }
+        .stat-card { padding: 24px; border-radius: var(--radius-lg); display: flex; flex-direction: column; justify-content: space-between; height: 150px; transition: var(--transition-smooth); }
+        .stat-card:hover { transform: translateY(-5px); border-color: rgba(99, 102, 241, 0.2); }
+        .stat-header { display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 14px; font-weight: 500; }
+        
+        .stat-icon { width: 32px; height: 32px; padding: 6px; border-radius: 8px; }
+        .stat-icon.purple { background: rgba(168,85,247,0.15); color: var(--secondary-color); }
+        .stat-icon.blue { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .stat-icon.green { background: rgba(16,185,129,0.15); color: var(--success-color); }
+        .stat-icon.red { background: rgba(239,68,68,0.15); color: var(--danger-color); }
+        
+        .stat-value { font-size: 32px; font-weight: 800; font-family: var(--font-heading); }
+        .stat-desc { font-size: 12px; color: var(--text-muted); }
+        .green-text { color: var(--success-color); }
+        .red-text { color: var(--danger-color); }
+        
+        .progress-bar-container { height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; overflow: hidden; margin-top: 10px; }
+        .progress-bar-fill { height: 100%; width: 0%; border-radius: 3px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
+        .green-bg { background-color: var(--success-color); box-shadow: 0 0 10px var(--success-glow); }
+        .red-bg { background-color: var(--danger-color); box-shadow: 0 0 10px var(--danger-glow); }
+        
+        .dashboard-grid { display: grid; grid-template-columns: 1.2fr 1.8fr; gap: 30px; }
+        @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: 1fr; } }
+        
+        .dashboard-card { padding: 24px; border-radius: var(--radius-lg); }
+        .dashboard-card h3 { margin-bottom: 20px; font-size: 18px; }
+        
+        .chart-card .chart-container { position: relative; height: 250px; width: 100%; display: flex; justify-content: center; }
+        
+        .list-card .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .recent-list-container { overflow-x: auto; }
+        .recent-table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+        .recent-table th { color: var(--text-muted); font-weight: 500; padding: 12px 10px; border-bottom: 1px solid var(--border-glass); }
+        .recent-table td { padding: 12px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
+        .recent-table tbody tr:last-child td { border-bottom: 0; }
+        
+        .badge { display: inline-flex; align-items: center; padding: 4px 10px; font-size: 11px; font-weight: 600; border-radius: 12px; }
+        .badge.submitted { background: rgba(16, 185, 129, 0.15); color: var(--success-color); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge.draft { background: rgba(245, 158, 11, 0.15); color: var(--warning-color); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .empty-state { text-align: center; color: var(--text-muted); padding: 40px 0 !important; }
+        
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: var(--radius-md); cursor: pointer; border: 1px solid transparent; transition: var(--transition-smooth); text-decoration: none; }
+        .btn-outline { background: transparent; border-color: var(--border-glass); color: var(--text-primary); }
+        .btn-outline:hover { background: var(--bg-glass-active); border-color: var(--text-muted); }
+        
+        /* Toast style */
+        .toast-container { position: fixed; top: 25px; right: 25px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 14px 20px; border-radius: var(--radius-md); color: #fff; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 12px; min-width: 250px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: toastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes toastIn { from { transform: translateX(100%) scale(0.9); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
+        .toast.error { background: var(--danger-color); }
+        .toast.info { background: var(--primary-color); }
+
+        /* Project Analytics styles */
+        .project-section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 35px 0 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-heading);
+        }
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        .project-card {
+            padding: 24px;
+            border-radius: var(--radius-lg);
+            transition: var(--transition-smooth);
+            border: 1px solid var(--border-glass);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            opacity: 0.8;
+        }
+        .project-card.co-molded::before {
+            background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+        }
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08), 0 0 15px rgba(37, 99, 235, 0.05);
+            border-color: rgba(37, 99, 235, 0.2);
+        }
+        .project-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(37, 99, 235, 0.08);
+            padding-bottom: 12px;
+        }
+        .project-card-header h3 {
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .project-card-header h3 span.en-sub {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+        .project-stats-subgrid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .project-stat-box {
+            background: rgba(37, 99, 235, 0.03);
+            border: 1px solid rgba(37, 99, 235, 0.06);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            text-align: center;
+            transition: var(--transition-smooth);
+        }
+        .project-stat-box:hover {
+            background: rgba(37, 99, 235, 0.06);
+        }
+        .project-stat-box .box-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            display: block;
+            font-weight: 600;
+        }
+        .project-stat-box .box-value {
+            font-size: 24px;
+            font-weight: 800;
+            font-family: var(--font-heading);
+        }
+        .project-stat-box.total .box-value { color: #2563eb; }
+        .project-stat-box.submitted .box-value { color: var(--success-color); }
+        .project-stat-box.draft .box-value { color: var(--warning-color); }
+        
+        .project-progress-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .project-progress-label strong {
+            color: var(--text-primary);
+        }
+
+        /* --- Checksheet Form Filler & Viewer Inline CSS --- */
+        .filler-layout { display: grid; grid-template-columns: 1fr 300px; gap: 30px; align-items: start; }
+        @media (max-width: 1024px) { .filler-layout { grid-template-columns: 1fr; } }
+        
+        .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+        .form-group label { font-size: 14px; font-weight: 500; }
+        .form-group input, .form-group textarea { background: var(--input-bg); border: 1px solid var(--border-glass); padding: 12px 16px; border-radius: var(--radius-md); color: var(--text-primary); font-size: 15px; width: 100%; outline: none; transition: var(--transition-smooth); }
+        .form-group input:focus, .form-group textarea:focus { border-color: var(--primary-color); box-shadow: 0 0 10px var(--primary-glow); }
+        .separator { border: 0; height: 1px; background: var(--border-glass); margin: 25px 0; }
+        
+        .filler-fields-container { display: flex; flex-direction: column; gap: 25px; }
+        .filler-field-row { transition: var(--transition-smooth); text-align: left; }
+        .filler-field-row:hover { background: rgba(37, 99, 235, 0.02); }
+        .filler-field-row.active-field { background: rgba(37, 99, 235, 0.04); }
+        
+        .filler-field-header { display: flex; justify-content: space-between; align-items: start; }
+        .field-label { font-size: 16px; font-weight: 600; }
+        .required-badge { color: var(--danger-color); font-size: 14px; margin-left: 4px; }
+        .field-input-wrapper { width: 100%; }
+        
+        /* PASS FAIL NA segmented controls */
+        .segmented-control { display: flex; background: rgba(37, 99, 235, 0.05); border-radius: var(--radius-md); padding: 4px; border: 1px solid var(--border-glass); width: 100%; max-width: 450px; }
+        .segmented-option { flex: 1; position: relative; }
+        .segmented-option input[type="radio"] { opacity: 0; position: absolute; width: 0; height: 0; }
+        .segmented-label { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 15px; font-size: 14px; font-weight: 700; border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; transition: var(--transition-smooth); }
+        
+        .segmented-option input[type="radio"]:checked + .segmented-label.opt-pass { background: var(--success-color); color: #fff; box-shadow: 0 0 15px var(--success-glow); }
+        .segmented-option input[type="radio"]:checked + .segmented-label.opt-fail { background: var(--danger-color); color: #fff; box-shadow: 0 0 15px var(--danger-glow); }
+        .segmented-option input[type="radio"]:checked + .segmented-label.opt-na { background: var(--warning-color); color: #fff; box-shadow: 0 0 15px var(--warning-glow); }
+        
+        .field-comment-trigger { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); cursor: pointer; background: transparent; border: 0; outline: none; transition: var(--transition-fast); }
+        .field-comment-trigger:hover { color: var(--text-primary); }
+        .field-comment-box { margin-top: 10px; display: none; animation: slideDown 0.3s ease forwards; }
+        @keyframes slideDown { from { opacity: 0; height: 0; transform: translateY(-5px); } to { opacity: 1; height: auto; transform: translateY(0); } }
+        
+        /* Toggle Switch slider */
+        .toggle-switch { position: relative; display: inline-block; width: 42px; height: 22px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.08); transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary-color); }
+        input:checked + .slider:before { transform: translateX(20px); }
+        
+        /* Circular progress HUD */
+        .filler-hud { padding: 24px; border-radius: var(--radius-lg); position: sticky; top: 40px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        .filler-hud h3 { font-size: 16px; align-self: flex-start; }
+        .hud-stat-circle { position: relative; display: flex; align-items: center; justify-content: center; width: 120px; height: 120px; }
+        .progress-ring { transform: rotate(-90deg); }
+        .progress-ring__circle { stroke-dasharray: 314.16 314.16; stroke-dashoffset: 314.16; transition: stroke-dashoffset 0.35s; transform-origin: 50% 50%; }
+        .progress-ring-text { position: absolute; font-size: 24px; font-weight: 800; font-family: var(--font-heading); }
+        .hud-stats-list { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+        .hud-stat-item { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); padding: 8px 12px; background: rgba(37, 99, 235, 0.04); border-radius: 8px; }
+        .hud-stat-item .value { font-weight: 700; color: var(--text-primary); }
+        .hud-stat-item.green-glow { box-shadow: inset 3px 0 0 var(--success-color); }
+        .hud-stat-item.red-glow { box-shadow: inset 3px 0 0 var(--danger-color); }
+        
+        /* Details Viewer card */
+        .viewer-layout { width: 100%; margin: 0 auto; }
+        .viewer-card { padding: 40px; border-radius: var(--radius-lg); }
+        .viewer-meta-section { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 25px; }
+        .meta-item .label { display: block; font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; }
+        .meta-item h3 { font-size: 16px; font-weight: 600; text-align: left; }
+        
+        .viewer-items-list { display: flex; flex-direction: column; gap: 20px; }
+        .viewer-item-row { padding: 16px 20px; background: rgba(255, 255, 255, 0.6); border: 1px solid var(--border-glass); border-radius: var(--radius-md); display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+        .viewer-item-left { display: flex; flex-direction: column; gap: 6px; text-align: left; }
+        .viewer-item-title { font-weight: 600; font-size: 15px; }
+        .viewer-item-comment { font-size: 13px; color: var(--text-muted); font-style: italic; background: rgba(37, 99, 235, 0.04); padding: 6px 12px; border-radius: 4px; border-left: 2px solid var(--primary-color); margin-top: 4px; display: inline-block; max-width: max-content; }
+        
+        .viewer-item-status-pill { padding: 6px 14px; border-radius: var(--radius-md); font-size: 12px; font-weight: 700; text-align: center; }
+        .viewer-item-status-pill.pass { background: rgba(16, 185, 129, 0.15); color: var(--success-color); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .viewer-item-status-pill.fail { background: rgba(239, 68, 68, 0.15); color: var(--danger-color); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .viewer-item-status-pill.na { background: rgba(245, 158, 11, 0.15); color: var(--warning-color); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .viewer-item-status-pill.checked { background: var(--bg-glass-active); color: var(--text-primary); border: 1px solid var(--border-glass); }
+        
+        .viewer-signature-block { margin-top: 40px; border-top: 1px solid var(--border-glass); padding-top: 30px; text-align: left; }
+        .viewer-signature-block h4 { font-size: 15px; color: var(--text-muted); margin-bottom: 12px; }
+        .signature-render-box { background: rgba(255, 255, 255, 0.8); border: 1px solid var(--border-glass); border-radius: var(--radius-md); padding: 10px; display: inline-block; }
+        .signature-render-box img { max-height: 100px; display: block; }
+        
+        .filter-select { background: var(--input-bg); border: 1px solid var(--border-glass); padding: 10px 16px; border-radius: var(--radius-md); color: var(--text-primary); outline: none; font-size: 14px; cursor: pointer; }
+        
+        .upload-box {
+            transition: var(--transition-smooth);
+        }
+        .upload-box:hover {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-color: rgba(99, 102, 241, 0.4) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.1);
+        }
+
+        /* --- Premium HTML Workspace Table & Pill Styles --- */
+        .workspace-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px;
+            margin-top: 20px;
+            background: #ffffff;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1.5px solid #64748b;
+        }
+        .workspace-table th {
+            background: rgba(37, 99, 235, 0.09);
+            color: #000000;
+            padding: 14px 16px;
+            font-family: var(--font-heading);
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+            border-bottom: 1.5px solid #64748b;
+            border-right: 1.5px solid #64748b;
+            white-space: nowrap;
+        }
+        .workspace-table th:last-child {
+            border-right: none;
+        }
+        .workspace-table td {
+            padding: 14px 16px;
+            border-bottom: 1.5px solid #94a3b8;
+            border-right: 1.5px solid #94a3b8;
+            color: var(--text-primary);
+            vertical-align: middle;
+        }
+        .workspace-table td:last-child {
+            border-right: none;
+        }
+        .workspace-table tr:last-child td {
+            border-bottom: none;
+        }
+        .workspace-table td:first-child,
+        .workspace-table td:nth-child(5),
+        .workspace-table td:nth-child(6) {
+            text-align: center;
+        }
+        .workspace-table tr:hover {
+            background: rgba(37, 99, 235, 0.03);
+        }
+        .table-input-text {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+            transition: var(--transition-smooth);
+        }
+        .table-input-text:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+        
+        .status-pill-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-glass);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            background: rgba(255, 255, 255, 0.8);
+            color: var(--text-muted);
+        }
+        .status-pill-btn input {
+            display: none;
+        }
+        .status-pill-btn:hover {
+            border-color: var(--text-muted);
+            color: var(--text-primary);
+        }
+        .status-pill-btn.pass:has(input:checked) {
+            background: rgba(16, 185, 129, 0.2) !important;
+            border-color: var(--success-color) !important;
+            color: var(--success-color) !important;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+        }
+        .status-pill-btn.fail:has(input:checked) {
+            background: rgba(239, 68, 68, 0.2) !important;
+            border-color: var(--danger-color) !important;
+            color: var(--danger-color) !important;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
+        }
+        .status-pill-btn.na:has(input:checked) {
+            background: rgba(0, 0, 0, 0.05) !important;
+            border-color: var(--text-muted) !important;
+            color: var(--text-muted) !important;
+        }
+        #profile-info-block.admin-clickable {
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+        #profile-info-block.admin-clickable:hover {
+            opacity: 0.85;
+            transform: translateY(-2px);
+        }
+
+        /* Premium Modal Backdrop & Card Styles */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-backdrop.show {
+            opacity: 1;
+        }
+        .modal-content {
+            background: var(--bg-glass-card);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            width: 90%;
+            max-width: 900px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-premium);
+            padding: 35px;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal-backdrop.show .modal-content {
+            transform: scale(1);
+        }
+        .modal-close-btn {
+            background: transparent;
+            border: 0;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: var(--transition-smooth);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            outline: none;
+        }
+        .modal-close-btn:hover {
+            background: rgba(37, 99, 235, 0.08);
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar glass">
+            <div class="brand">
+                <div class="brand-icon">
+                    <i data-lucide="check-square"></i>
+                </div>
+                <h2>xOCS</h2>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="/dashboard" class="nav-item active">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Tổng quan / Overview</span>
+                </a>
+                <a href="/templates" class="nav-item" id="sidebar-nav-templates">
+                    <i data-lucide="database"></i>
+                    <span>Dữ liệu / Data</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="app-status" style="border-top: 1px solid var(--border-glass); padding-top: 15px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 10px;" id="profile-info-block">
+                        <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff;" id="profile-initial">-</div>
+                        <div style="display: flex; flex-direction: column; text-align: left;">
+                            <span style="font-weight: 600; font-size: 13px;" id="profile-username">Loading...</span>
+                            <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                                <span style="font-size: 11px; color: var(--text-muted);" id="profile-role">-</span>
+                                <button id="admin-settings-btn" onclick="toggleAdminSettingsModal(true)" style="display: none; background: rgba(255,255,255,0.06); border: 1px solid var(--border-glass); padding: 3px; color: var(--text-muted); cursor: pointer; border-radius: 4px; transition: var(--transition-smooth); align-items: center; justify-content: center; outline: none; line-height: 0;" title="Cài đặt hệ thống & Quản lý người dùng / Settings & User Management" onmouseover="this.style.color='var(--primary-color)'; this.style.borderColor='var(--border-glass-glow)'; this.style.background='var(--bg-glass-active)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='var(--border-glass)'; this.style.background='rgba(255,255,255,0.06)'">
+                                    <i data-lucide="settings" style="width: 11px; height: 11px;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="handleLogout()" style="background: transparent; border: 0; color: var(--danger-color); font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 4px 0; outline: none;">
+                        <i data-lucide="log-out" style="width: 12px; height: 12px;"></i> Đăng Xuất (Logout)
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Body -->
+        <main class="main-content">
+            <div class="toast-container" id="toast-container"></div>
+
+            <header class="page-header">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p class="subtitle-vi" style="font-size:14px;color:var(--text-muted);margin-top:4px;">Bảng điều khiển</p>
+                    <p class="subtitle">Overview of checksheet statistics and compliance activity</p>
+                </div>
+            </header>
+
+            <!-- Project Analytics Section -->
+            <div class="project-section-title" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <i data-lucide="folder-git-2" style="color: var(--primary-color); width: 22px; height: 22px;"></i>
+                    <span>Số Liệu Theo Dự Án / Project Analytics</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <label for="analytics-date" style="font-size:13px; color:var(--text-muted); font-weight:500;">
+                        <i data-lucide="calendar" style="width:14px; height:14px; vertical-align:middle; margin-right:4px;"></i>Ngày:
+                    </label>
+                    <input type="date" id="analytics-date" class="glass-input" 
+                        style="padding:6px 12px; border-radius:var(--radius-sm); font-size:13px; background:var(--bg-glass); border:1px solid var(--border-glass); color:var(--text-primary); cursor:pointer;"
+                        onchange="refreshDashboard()">
+                </div>
+            </div>
+            
+            <div class="project-grid">
+                <!-- SE Project -->
+                <div class="project-card glass se-project" onclick="selectProjectFromDashboard('SE')" style="cursor: pointer;">
+                    <div class="project-card-header">
+                        <h3>
+                            <i data-lucide="layers" style="color: var(--primary-color); width: 20px; height: 20px;"></i>
+                            <span>Dự Án SE</span>
+                            <span class="en-sub">/ SE Project</span>
+                        </h3>
+                        <i data-lucide="activity" style="color: var(--primary-color); opacity: 0.5; width: 16px; height: 16px;"></i>
+                    </div>
+                    <div class="project-stats-subgrid">
+                        <div class="project-stat-box total">
+                            <span class="box-label">Tổng số / Total</span>
+                            <span class="box-value" id="se-total">-</span>
+                        </div>
+                        <div class="project-stat-box submitted">
+                            <span class="box-label">Đã nộp / Done</span>
+                            <span class="box-value" id="se-submitted">-</span>
+                        </div>
+                        <div class="project-stat-box draft">
+                            <span class="box-label">Nháp / Pending</span>
+                            <span class="box-value" id="se-draft">-</span>
+                        </div>
+                    </div>
+                    <div class="project-progress-label">
+                        <span>Tỷ lệ hoàn thành (Completion Rate)</span>
+                        <strong id="se-completion-pct">-%</strong>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill green-bg" id="se-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Co-molded Project -->
+                <div class="project-card glass co-molded" onclick="selectProjectFromDashboard('Co-molded')" style="cursor: pointer;">
+                    <div class="project-card-header">
+                        <h3>
+                            <i data-lucide="cpu" style="color: var(--secondary-color); width: 20px; height: 20px;"></i>
+                            <span>Dự Án Co-molded</span>
+                            <span class="en-sub">/ Co-molded</span>
+                        </h3>
+                        <i data-lucide="activity" style="color: var(--secondary-color); opacity: 0.5; width: 16px; height: 16px;"></i>
+                    </div>
+                    <div class="project-stats-subgrid">
+                        <div class="project-stat-box total">
+                            <span class="box-label">Tổng số / Total</span>
+                            <span class="box-value" id="co-total">-</span>
+                        </div>
+                        <div class="project-stat-box submitted">
+                            <span class="box-label">Đã nộp / Done</span>
+                            <span class="box-value" id="co-submitted">-</span>
+                        </div>
+                        <div class="project-stat-box draft">
+                            <span class="box-label">Nháp / Pending</span>
+                            <span class="box-value" id="co-draft">-</span>
+                        </div>
+                    </div>
+                    <div class="project-progress-label">
+                        <span>Tỷ lệ hoàn thành (Completion Rate)</span>
+                        <strong id="co-completion-pct">-%</strong>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill green-bg" id="co-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inline Checksheet Selector & Filler Workspace -->
+            <div class="project-section-title" id="online-inspection-title" style="margin: 40px 0 15px;">
+                <i data-lucide="clipboard-check" style="color: var(--success-color); width: 22px; height: 22px;"></i>
+                <span>Kiểm Tra Công Đoạn / Online Inspection Workspace</span>
+            </div>
+
+            <div class="glass" style="padding: 24px; border-radius: var(--radius-lg); margin-bottom: 30px;">
+                <h3 style="font-size: 16px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="sliders" style="width: 18px; height: 18px; color: var(--primary-color);"></i>
+                    Bộ lọc & Lựa chọn công đoạn / Select Inspection Target
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 20px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="cs-fill-project" style="font-size: 13px; font-weight: 600;">Dự án / Project</label>
+                        <select id="cs-fill-project" class="filter-select" style="margin-top: 5px; width: 100%;" onchange="updateOperationOptions('cs-fill-project','cs-fill-operation',false); loadActiveChecksheet();">
+                            <option value="">Chọn dự án...</option>
+                            <option value="SE">SE</option>
+                            <option value="Co-molded">Co-molded</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="cs-fill-line" style="font-size: 13px; font-weight: 600;">Chuyền / Line</label>
+                        <select id="cs-fill-line" class="filter-select" style="margin-top: 5px; width: 100%;" onchange="updateOperationOptions('cs-fill-project','cs-fill-operation',false); loadActiveChecksheet();">
+                            <option value="Line 1">Line 1</option>
+                            <option value="Line 2">Line 2</option>
+                            <option value="Line 3">Line 3</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="cs-fill-date" style="font-size: 13px; font-weight: 600;">Ngày kiểm tra / Date</label>
+                        <input type="date" id="cs-fill-date" class="filter-select" style="margin-top: 5px; width: 100%;" onclick="this.showPicker()" onchange="loadActiveChecksheet(); refreshDashboard();" />
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="cs-fill-operation" style="font-size: 13px; font-weight: 600;">Công đoạn / Operation</label>
+                        <select id="cs-fill-operation" class="filter-select" style="margin-top: 5px; width: 100%;" onchange="loadActiveChecksheet();">
+                            <option value="">Chọn dự án trước...</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="machine-select-wrapper" style="margin-bottom: 0; display: none;">
+                        <label for="cs-fill-machine" style="font-size: 13px; font-weight: 600;">Máy / Machine</label>
+                        <select id="cs-fill-machine" class="filter-select" style="margin-top: 5px; width: 100%;" onchange="loadActiveChecksheet();">
+                            <option value="N/A">N/A (Mặc định)</option>
+                            <option value="Máy 1">Máy 1</option>
+                            <option value="Máy 2">Máy 2</option>
+                            <option value="Máy 3">Máy 3</option>
+                            <option value="Máy 4">Máy 4</option>
+                            <option value="Máy 5">Máy 5</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Checksheet Filler Workspace -->
+            <div id="checksheet-filler-pane" style="display: none; margin-bottom: 40px;">
+                <div class="filler-form-card glass" style="padding: 40px; border-radius: var(--radius-lg); background: var(--bg-glass-card); border: 1px solid var(--border-glass); width: 100%; margin: 0 auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                        <h3 style="font-size: 20px; font-family: var(--font-heading); color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                            <i data-lucide="clipboard-edit" style="color: var(--primary-color);"></i>
+                            <span>Điền Báo Cáo Kiểm Tra / Fill Inspection Checksheet</span>
+                        </h3>
+                        <div id="filler-hud" style="font-size: 14px; font-weight: 600; color: var(--success-color); background: rgba(16,185,129,0.1); padding: 6px 14px; border-radius: var(--radius-md); border: 1px solid rgba(16,185,129,0.2);">
+                            Tiến độ / Progress: <span id="filler-progress-text">0/0</span> (<span id="filler-progress-pct">0%</span>)
+                        </div>
+                    </div>
+                    
+                    <form id="checksheet-submission-form" onsubmit="event.preventDefault();">
+                        <div class="filler-meta-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 25px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="cs-fill-title" style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Tiêu đề Bảng / Checksheet Title</label>
+                                <input type="text" id="cs-fill-title" class="filter-select" style="margin-top: 5px; width: 100%;" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="cs-fill-inspector" style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Người kiểm tra / Inspector</label>
+                                <input type="text" id="cs-fill-inspector" class="filter-select" style="margin-top: 5px; width: 100%;" placeholder="Nhập tên người kiểm tra..." required>
+                            </div>
+                        </div>
+
+                        <hr style="border: 0; height: 1px; background: var(--border-glass); margin: 25px 0;">
+
+                        <!-- Dynamic elements populated by JS -->
+                        <div id="filler-fields-container" style="display: flex; flex-direction: column; gap: 20px; margin-bottom: 30px;">
+                            <!-- populated by renderFillerFields -->
+                        </div>
+
+                        <hr style="border: 0; height: 1px; background: var(--border-glass); margin: 30px 0;">
+
+                        <div class="form-actions" style="display: flex; gap: 15px; justify-content: flex-end;">
+                            <button type="button" class="btn btn-outline" id="btn-save-draft" onclick="saveChecksheetInstance('Draft')">
+                                <i data-lucide="save" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 5px;"></i> Lưu nháp / Save Draft
+                            </button>
+                            <button type="button" class="btn btn-primary" id="btn-submit-checksheet" onclick="saveChecksheetInstance('Submitted')">
+                                <i data-lucide="send" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 5px;"></i> Gửi kết quả / Submit
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Read-only Detail Viewer Modal/Card (For review when clicking recent checksheets) -->
+            <div id="checksheet-viewer-pane" style="display: none; margin-bottom: 40px;">
+                <div class="viewer-layout" style="width: 100%; margin: 0 auto;">
+                    <div class="viewer-card glass" style="padding: 40px; border-radius: var(--radius-lg); background: var(--bg-glass-card); border: 1px solid var(--border-glass);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 id="viewer-title" style="font-size: 20px;">Checksheet Details</h3>
+                            <button type="button" class="btn btn-outline btn-sm" id="btn-close-viewer">Đóng / Close</button>
+                        </div>
+                        <div class="viewer-meta-section" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 25px;">
+                            <div class="meta-item">
+                                <span class="label" style="display: block; font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Checksheet Title</span>
+                                <h3 id="v-title" style="font-size: 16px; font-weight: 600;">-</h3>
+                            </div>
+                            <div class="meta-item">
+                                <span class="label" style="display: block; font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Inspector</span>
+                                <h3 id="v-filler" style="font-size: 16px; font-weight: 600;">-</h3>
+                            </div>
+                            <div class="meta-item">
+                                <span class="label" style="display: block; font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Line / Chuyền</span>
+                                <h3 id="v-line" style="font-size: 16px; font-weight: 600;">-</h3>
+                            </div>
+                            <div class="meta-item" id="v-machine-meta-item" style="display: none;">
+                                <span class="label" style="display: block; font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Machine / Máy</span>
+                                <h3 id="v-machine" style="font-size: 16px; font-weight: 600;">-</h3>
+                            </div>
+                            <div class="meta-item">
+                                <span class="label" style="display: block; font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Status</span>
+                                <div><span class="badge" id="v-status">-</span></div>
+                            </div>
+                            <div class="meta-item">
+                                <span class="label" style="display: block; font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;">Conducted Date</span>
+                                <h3 id="v-date" style="font-size: 16px; font-weight: 600;">-</h3>
+                            </div>
+                        </div>
+
+                        <hr class="separator" style="border: 0; height: 1px; background: var(--border-glass); margin: 25px 0;">
+
+                        <div class="viewer-items-list" id="viewer-items-container" style="display: flex; flex-direction: column; gap: 20px;">
+                            <!-- Dynamic responses rows -->
+                        </div>
+
+                        <!-- Rendered Signature block -->
+                        <div class="viewer-signature-block" id="v-signature-wrapper" style="display:none; margin-top: 40px; border-top: 1px solid var(--border-glass); padding-top: 30px;">
+                            <h4>Inspector Signature Authority</h4>
+                            <div class="signature-render-box" style="background: rgba(0, 0, 0, 0.15); border: 1px solid var(--border-glass); border-radius: var(--radius-md); padding: 10px; display: inline-block;">
+                                <img id="signature-img" src="" alt="Inspector Signature" style="max-height: 100px; display: block;" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="checksheet-empty-state" class="glass" style="padding: 60px; border-radius: var(--radius-lg); text-align: center; color: var(--text-muted); margin-bottom: 40px; background: var(--bg-glass-card); border: 1px solid var(--border-glass);">
+                <i data-lucide="clipboard-list" style="width: 64px; height: 64px; margin: 0 auto 20px; opacity: 0.3; display: block; color: var(--primary-color);"></i>
+                <h3 style="font-size: 18px; color: var(--text-primary); margin-bottom: 10px;">Chưa chọn công đoạn kiểm tra</h3>
+                <p style="font-size: 14px;">Vui lòng chọn <strong>Dự án</strong> và <strong>Công đoạn</strong> ở bảng trên để tải nội dung checksheet hoặc tiếp tục điền bản nháp.</p>
+                <p class="subtitle-vi" style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">Please select a Project and Operation above to load the corresponding checksheet.</p>
+            </div>
+
+            <!-- Admin User Management Modal (admin only) -->
+            <div id="admin-settings-modal" class="modal-backdrop" style="display: none;" onclick="closeAdminSettingsModal(event)">
+                <div class="modal-content glass" onclick="event.stopPropagation()">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border-glass); padding-bottom: 15px;">
+                        <h3 style="font-size: 20px; font-family: var(--font-heading); color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
+                            <i data-lucide="settings" style="color: var(--primary-color); width: 24px; height: 24px;"></i>
+                            <span>Cài đặt hệ thống & Quản lý người dùng / Settings & User Management</span>
+                        </h3>
+                        <button class="modal-close-btn" onclick="toggleAdminSettingsModal(false)">
+                            <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+                        </button>
+                    </div>
+                    
+                    <div style="padding: 5px 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 style="font-size: 16px; display: flex; align-items: center; gap: 8px;">
+                                <i data-lucide="shield-check" style="width: 18px; height: 18px; color: var(--success-color);"></i>
+                                Danh sách tài khoản / All Accounts
+                            </h3>
+                            <button class="btn btn-outline" onclick="loadAdminUsers()" style="padding: 6px 14px; font-size: 12px;">
+                                <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Làm mới
+                            </button>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table class="workspace-table" id="admin-users-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">STT</th>
+                                        <th>Tên tài khoản</th>
+                                        <th style="width: 140px;">Quyền / Role</th>
+                                        <th style="width: 160px;">Trạng thái / Status</th>
+                                        <th style="width: 140px;">Ngày tạo</th>
+                                        <th style="width: 200px;">Hành động / Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-users-tbody">
+                                    <tr><td colspan="6" class="empty-state">Đang tải...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Removed Compliance Performance and Recent Conducted Checksheets sections -->
+        </main>
+    </div>
+
+    <script>
+        // --- Consolidated Dashboard & Checksheet Module JS Logic ---
+        function cleanAndNormalize(str) {
+            if (!str) return "";
+            return str
+                .toLowerCase()
+                .replace(/[\r\n]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+async function handleDataUpload(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // Lọc các file .json
+    const jsonFiles = Array.from(files).filter(f => f.name.toLowerCase().endsWith('.json'));
+
+    if (jsonFiles.length === 0) {
+        showToast('Vui lòng chọn tệp .json', 'error');
+        return;
+    }
+
+    showToast(`Đang nhập ${jsonFiles.length} tệp dữ liệu...`, 'info');
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const file of jsonFiles) {
+        try {
+            const fileContent = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = e => reject(e.target.error);
+                reader.readAsText(file);
+            });
+
+            const data = JSON.parse(fileContent);
+            const result = await importChecksheetData(data);
+
+            if (result.success) {
+                successCount++;
+                
+                // Tự động đồng bộ giao diện form nếu tệp khớp với cấu hình hiện tại đang được chọn
+                const currentProj = document.getElementById('cs-fill-project').value;
+                const currentOp = document.getElementById('cs-fill-operation').value;
+                const currentDate = document.getElementById('cs-fill-date').value;
+
+                if (result.data && 
+                    result.data.project === currentProj && 
+                    result.data.operation === currentOp && 
+                    result.data.conducted_date === currentDate) {
+                    showToast('Dữ liệu tệp trùng khớp với cấu hình hiện tại. Đang đồng bộ giao diện...', 'info');
+                    await loadActiveChecksheet(); 
+                }
+            } else {
+                console.error(`Import failed for ${file.name}:`, result.error);
+                failCount++;
+            }
+        } catch (err) {
+            console.error(`Error processing file ${file.name}:`, err);
+            failCount++;
+        }
+    }
+
+    if (successCount > 0) {
+        showToast(`Đã đưa thành công ${successCount} tệp lên hệ thống!`, 'info');
+        refreshDashboard();
+    }
+    if (failCount > 0) {
+        showToast(`Có ${failCount} tệp lỗi không đưa lên được hệ thống!`, 'error');
+    }
+
+    event.target.value = '';
+}
+
+async function importChecksheetData(jsonData) {
+    try {
+        const title = jsonData.title || jsonData.v_title || 'Imported Checksheet';
+        const project = jsonData.project || 'SE'; 
+        const operation = jsonData.operation || '';
+        const conductedDate = jsonData.conducted_date || jsonData.date || new Date().toISOString().split('T')[0];
+        const fillerName = jsonData.filler_name || jsonData.inspector || 'System Importer';
+        const status = jsonData.status || 'Submitted';
+
+        if (!operation) {
+            return { success: false, error: 'Thiếu thông tin công đoạn (operation)' };
+        }
+
+        // Lấy thông tin template tương ứng
+        const tplRes = await fetch(`/api/v1/templates/by-operation?operation=${encodeURIComponent(operation)}`);
+        if (!tplRes.ok) {
+            return { success: false, error: `Không tìm thấy mẫu thiết kế cho công đoạn: ${operation}` };
+        }
+        const template = await tplRes.json();
+        const templateId = template.id;
+
+        const responses = {};
+        if (jsonData.responses) {
+            Object.assign(responses, jsonData.responses);
+        } else if (Array.isArray(jsonData.items)) {
+            // Ánh xạ mảng items sang object responses
+            template.items.forEach(tItem => {
+                const matched = jsonData.items.find(jItem => 
+                    jItem.id === tItem.id ||
+                    cleanAndNormalize(jItem.label) === cleanAndNormalize(tItem.label) ||
+                    (jItem.label && tItem.label && (
+                        cleanAndNormalize(jItem.label).includes(cleanAndNormalize(tItem.label)) ||
+                        cleanAndNormalize(tItem.label).includes(cleanAndNormalize(jItem.label))
+                    ))
+                );
+                if (matched) {
+                    responses[tItem.id] = {
+                        value: matched.value !== undefined ? matched.value : (matched.status || ''),
+                        status: matched.status || null,
+                        comment: matched.comment || null
+                    };
+                } else {
+                    responses[tItem.id] = { value: null, status: null, comment: null };
+                }
+            });
+            if (jsonData.signature || jsonData.signatureData) {
+                responses['__signature__'] = {
+                    value: jsonData.signature || jsonData.signatureData,
+                    status: 'Pass',
+                    comment: 'Digital Signature'
+                };
+            }
+        }
+
+        // Kiểm tra xem đã có bản ghi nào tồn tại chưa để cập nhật thay vì ghi đè trùng lặp
+        const line = document.getElementById('cs-fill-line') ? document.getElementById('cs-fill-line').value : 'Line 1';
+        const machine = jsonData.machine || (document.getElementById('cs-fill-machine') ? document.getElementById('cs-fill-machine').value : 'N/A');
+        const checksheetsRes = await fetch(`/api/v1/checksheets?project=${encodeURIComponent(project)}&operation=${encodeURIComponent(operation)}&date=${encodeURIComponent(conductedDate)}&line=${encodeURIComponent(line)}&machine=${encodeURIComponent(machine)}`);
+        let existingCs = null;
+        if (checksheetsRes.ok) {
+            const list = await checksheetsRes.json();
+            existingCs = list.find(c => c.status === status) || list[0];
+        }
+
+        const payload = {
+            template_id: templateId,
+            title: title,
+            status: status,
+            filler_name: fillerName,
+            project: project,
+            line: line,
+            machine: machine,
+            operation: operation,
+            conducted_date: conductedDate,
+            responses: responses
+        };
+
+        let saveUrl = '/api/v1/checksheets';
+        let method = 'POST';
+
+        if (existingCs) {
+            saveUrl = `/api/v1/checksheets/${existingCs.id}`;
+            method = 'PUT';
+        }
+
+        const saveRes = await fetch(saveUrl, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!saveRes.ok) {
+            const errData = await saveRes.json();
+            return { success: false, error: errData.error || 'Failed to save checksheet' };
+        }
+
+        const savedData = await saveRes.json();
+        return { success: true, data: savedData };
+
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+}
+        const state = {
+            checksheets: [],
+            currentTemplate: null,
+            currentChecksheet: null,
+            isDrawing: false,
+            signatureData: null
+        };
+
+        const PROJECT_OPERATIONS = {
+            'SE': [
+                { value: 'avi', label: 'AVI' },
+                { value: 'baking_oven', label: 'Baking Oven' },
+                { value: 'dispenser', label: 'Cụm Dispenser' },
+                { value: 'demold', label: 'Cụm Demold' },
+                { value: 'plasma', label: 'Cụm Plasma' },
+                { value: 'uv', label: 'Cụm UV' },
+                { value: 'diecut_5_hold', label: 'Diecut 5 hold' },
+                { value: 'drying_oven', label: 'Drying Oven' },
+                { value: 'keeping_oven', label: 'Keeping Oven' },
+                { value: 'outer', label: 'Outer' },
+                { value: 'prebake_oven', label: 'Prebake Oven' },
+                { value: 'punching', label: 'Punching' }
+            ],
+            'Co-molded': [
+                { value: 'avi', label: 'AVI' },
+                { value: 'baking_oven', label: 'Baking Oven' },
+                { value: 'dispenser', label: 'Cụm Dispenser' },
+                { value: 'laser', label: 'Cụm Laser' },
+                { value: 'uv', label: 'Cụm UV' },
+                { value: 'vacuum', label: 'Cụm Vacuum' },
+                { value: 'pet_feeder', label: 'Cụm cấp PET' },
+                { value: 'pet_cleaning', label: 'Vệ sinh và kiểm tra PET' },
+                { value: 'plasma', label: 'Plasma' },
+                { value: 'uv_diecut', label: 'UV diecut' },
+                { value: 'uv_replication', label: 'UV replication' },
+                { value: 'dehumidifier', label: 'Máy hút ẩm' },
+                { value: 'demold', label: 'Demold' },
+                { value: 'keeping_oven', label: 'Keeping Oven' },
+                { value: 'mvi', label: 'MVI' },
+                { value: 'outer', label: 'Outer' },
+                { value: 'prebake_oven', label: 'Prebake Oven' },
+                { value: 'punching', label: 'Punching' }
+            ]
+        };
+
+        let complianceChartRef = null;
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            checkAuthSession().then(() => {
+                // Initialize today's date
+                const dateInput = document.getElementById('cs-fill-date');
+                if (dateInput) {
+                    dateInput.value = new Date().toISOString().split('T')[0];
+                }
+
+                // Initialize analytics date picker to today
+                const analyticsDate = document.getElementById('analytics-date');
+                if (analyticsDate) {
+                    analyticsDate.value = new Date().toISOString().split('T')[0];
+                }
+
+                // Hydrate operations options based on default selections
+                updateOperationOptions('cs-fill-project', 'cs-fill-operation', false);
+
+                // Bind all interaction events
+                initEventBindings();
+                initSignaturePad();
+
+                // Refresh statistics counters
+                refreshDashboard();
+
+                // Detect URL actions
+                const urlParams = new URLSearchParams(window.location.search);
+                const checksheetId = urlParams.get('id');
+                const status = urlParams.get('status');
+
+                if (checksheetId) {
+                    if (status === 'Draft') {
+                        resumeChecksheetDraft(checksheetId);
+                    } else {
+                        viewChecksheet(checksheetId);
+                    }
+                }
+            });
+        });
+
+        async function checkAuthSession() {
+            try {
+                const res = await fetch('/api/v1/auth/me');
+                if (!res.ok) {
+                    throw new Error('Unauthorized');
+                }
+                const user = await res.json();
+                currentUser = user;
+                
+                // Hydrate Profile UI
+                document.getElementById('profile-username').innerText = user.username;
+                document.getElementById('profile-role').innerText = user.role === 'admin' ? 'Quản trị viên (Admin)' : 'Người kiểm tra (Operator)';
+                document.getElementById('profile-initial').innerText = user.username.charAt(0).toUpperCase();
+
+                // Apply dynamic Role Restrictions
+                if (user.role === 'admin') {
+                    // Show admin settings gear button under the username
+                    const adminSettingsBtn = document.getElementById('admin-settings-btn');
+                    if (adminSettingsBtn) {
+                        adminSettingsBtn.style.display = 'inline-flex';
+                    }
+                } else {
+                    // Hide Templates link and new template button in sidebar
+                    const templatesNavLink = document.querySelector('a[href="/templates"]');
+                    if (templatesNavLink) {
+                        templatesNavLink.style.display = 'none';
+                    }
+                    const newTemplatesNavLink = document.querySelector('a[href="/templates?action=create"]');
+                    if (newTemplatesNavLink) {
+                        newTemplatesNavLink.style.display = 'none';
+                    }
+                }
+                lucide.createIcons();
+            } catch (err) {
+                window.location.href = '/login';
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/v1/auth/logout', { method: 'POST' });
+                window.location.href = '/login';
+            } catch (err) {
+                showToast('Failed to log out', 'error');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            const iconName = type === 'error' ? 'alert-triangle' : 'info';
+            toast.innerHTML = `<i data-lucide="${iconName}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            lucide.createIcons();
+            setTimeout(() => {
+                toast.style.animation = 'toastIn 0.3s reverse forwards';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function initEventBindings() {
+            // Save draft & submit buttons
+            const btnSaveDraft = document.getElementById('btn-save-draft');
+            if (btnSaveDraft) {
+                btnSaveDraft.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    saveChecksheetInstance('Draft');
+                });
+            }
+            const btnSubmit = document.getElementById('btn-submit-checksheet');
+            if (btnSubmit) {
+                btnSubmit.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    saveChecksheetInstance('Submitted');
+                });
+            }
+
+            // Close viewer button
+            document.getElementById('btn-close-viewer').addEventListener('click', () => {
+                document.getElementById('cs-fill-operation').value = '';
+                loadActiveChecksheet();
+            });
+
+            // Selector change event bindings using addEventListener
+            const fillProjSelect = document.getElementById('cs-fill-project');
+            const fillLineSelect = document.getElementById('cs-fill-line');
+            const fillOpSelect = document.getElementById('cs-fill-operation');
+            const fillDateInput = document.getElementById('cs-fill-date');
+
+            if (fillProjSelect) {
+                fillProjSelect.addEventListener('change', function() {
+                    updateOperationOptions('cs-fill-project', 'cs-fill-operation', false);
+                    loadActiveChecksheet();
+                });
+            }
+
+            if (fillLineSelect) {
+                fillLineSelect.addEventListener('change', function() {
+                    updateOperationOptions('cs-fill-project', 'cs-fill-operation', false);
+                    loadActiveChecksheet();
+                });
+            }
+
+            if (fillOpSelect) {
+                fillOpSelect.addEventListener('change', function() {
+                    loadActiveChecksheet();
+                });
+            }
+
+            if (fillDateInput) {
+                fillDateInput.addEventListener('change', function() {
+                    loadActiveChecksheet();
+                    refreshDashboard();
+                });
+            }
+        }
+
+        function updateOperationOptions(projectSelectId, operationSelectId, isFilter = false, selectedVal = '') {
+            const projectSelect = document.getElementById(projectSelectId);
+            const operationSelect = document.getElementById(operationSelectId);
+            if (!projectSelect || !operationSelect) return;
+
+            const projectValRaw = projectSelect.value;
+            const projectVal = projectValRaw ? projectValRaw.trim() : '';
+            console.log('updateOperationOptions - projectVal:', projectVal);
+
+            // Save current selected value before rebuilding if not explicitly provided
+            const currentVal = selectedVal || operationSelect.value;
+
+            // Clear existing options
+            operationSelect.innerHTML = '';
+
+            // Add default option
+            const defaultOption = document.createElement('option');
+            if (isFilter) {
+                defaultOption.value = 'ALL';
+                defaultOption.innerText = 'All Operations';
+            } else {
+                defaultOption.value = '';
+                defaultOption.innerText = 'Chọn công đoạn';
+            }
+            operationSelect.appendChild(defaultOption);
+
+            // Ensure the select is enabled before populating
+            operationSelect.disabled = false;
+            operationSelect.removeAttribute('disabled');
+
+            let list = [];
+            if (projectVal === 'ALL' || !projectVal) {
+                if (isFilter) {
+                    // For filter case, combine all operations without duplicates
+                    const seen = new Set();
+                    const allOps = [...PROJECT_OPERATIONS['SE'], ...PROJECT_OPERATIONS['Co-molded']];
+                    allOps.forEach(op => {
+                        if (!seen.has(op.value)) {
+                            seen.add(op.value);
+                            list.push(op);
+                        }
+                    });
+                    // Sort alphabetically by label
+                    list.sort((a, b) => a.label.localeCompare(b.label));
+                } else {
+                    // In form filler, if no project is selected, keep disabled and show placeholder
+                    operationSelect.disabled = true;
+                    const selectProjectOption = document.createElement('option');
+                    selectProjectOption.value = '';
+                    selectProjectOption.innerText = 'Chọn dự án trước...';
+                    operationSelect.appendChild(selectProjectOption);
+                    console.log('No project selected, operation dropdown disabled');
+                    return; // exit early
+                }
+            } else {
+                const origList = PROJECT_OPERATIONS[projectVal] || [];
+                const lineSelect = document.getElementById('cs-fill-line');
+                const lineVal = lineSelect ? lineSelect.value : 'Line 1';
+                
+                list = origList.filter(op => {
+                    // Punching chỉ có ở Line 1 và Line 2 (ẩn ở Line 3)
+                    if (op.value === 'punching' && lineVal === 'Line 3') {
+                        return false;
+                    }
+                    // MVI chỉ có ở Line 1 (ẩn ở Line 2 và Line 3)
+                    if (op.value === 'mvi' && (lineVal === 'Line 2' || lineVal === 'Line 3')) {
+                        return false;
+                    }
+                    // AVI chỉ có ở Line 1 (ẩn ở Line 2 và Line 3)
+                    if (op.value === 'avi' && (lineVal === 'Line 2' || lineVal === 'Line 3')) {
+                        return false;
+                    }
+                    return true;
+                });
+                
+                // Sort alphabetically by label for the selected project
+                list.sort((a, b) => a.label.localeCompare(b.label));
+            }
+
+            // Populate operation options
+            list.forEach(op => {
+                const opt = document.createElement('option');
+                opt.value = op.value;
+                opt.innerText = op.label;
+                operationSelect.appendChild(opt);
+            });
+
+            // Re-set previously selected value if it still exists
+            if (currentVal && list.some(op => op.value === currentVal)) {
+                operationSelect.value = currentVal;
+            }
+
+            console.log('Operation options populated, count:', list.length);
+        }
+
+        async function loadActiveChecksheet() {
+            const project = document.getElementById('cs-fill-project').value;
+            const date = document.getElementById('cs-fill-date').value;
+            const operation = document.getElementById('cs-fill-operation').value;
+            const line = document.getElementById('cs-fill-line') ? document.getElementById('cs-fill-line').value : 'Line 1';
+
+            // Show/Hide Machine selector dynamically when operation is 'avi'
+            const machineWrapper = document.getElementById('machine-select-wrapper');
+            if (machineWrapper) {
+                if (operation === 'avi') {
+                    machineWrapper.style.display = 'block';
+                } else {
+                    machineWrapper.style.display = 'none';
+                    const fillMachineSelect = document.getElementById('cs-fill-machine');
+                    if (fillMachineSelect) fillMachineSelect.value = 'N/A';
+                }
+            }
+
+            const machine = document.getElementById('cs-fill-machine') ? document.getElementById('cs-fill-machine').value : 'N/A';
+
+            const fillerPane = document.getElementById('checksheet-filler-pane');
+            const viewerPane = document.getElementById('checksheet-viewer-pane');
+            const emptyState = document.getElementById('checksheet-empty-state');
+
+            if (!project || !operation || !date) {
+                fillerPane.style.display = 'none';
+                viewerPane.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            try {
+                // Fetch checksheets for this project, operation, date, line, and machine
+                const url = `/api/v1/checksheets?project=${encodeURIComponent(project)}&operation=${encodeURIComponent(operation)}&date=${encodeURIComponent(date)}&line=${encodeURIComponent(line)}&machine=${encodeURIComponent(machine)}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Không thể kiểm tra trạng thái checksheet hàng ngày');
+                
+                const checksheets = await response.json();
+                
+                // 1. Look for a submitted checksheet
+                const submittedCs = checksheets.find(c => c.status === 'Submitted');
+                if (submittedCs) {
+                    showToast('Lượt kiểm tra hôm nay đã được gửi và khóa. Bạn chỉ có thể xem chi tiết.', 'info');
+                    await viewChecksheetInline(submittedCs);
+                    return;
+                }
+
+                // 2. Look for a draft checksheet
+                const draftCs = checksheets.find(c => c.status === 'Draft');
+                if (draftCs) {
+                    showToast('Tìm thấy bản nháp kiểm tra. Đang tải kết quả nháp...', 'info');
+                    await resumeChecksheetDraftInline(draftCs);
+                    return;
+                }
+
+                // 3. Fallback to a new checksheet from template
+                showToast('Bắt đầu lượt kiểm tra mới cho ngày hôm nay.', 'info');
+                await startNewChecksheetInline(operation, date);
+
+            } catch (err) {
+                showToast(err.message, 'error');
+                fillerPane.style.display = 'none';
+                viewerPane.style.display = 'none';
+                emptyState.style.display = 'block';
+            }
+        }
+
+        async function viewChecksheetInline(cs) {
+            try {
+                state.currentChecksheet = cs;
+                const tplRes = await fetch(`/api/v1/templates/${cs.template_id}`);
+                if (!tplRes.ok) throw new Error('Không thể tải mẫu câu hỏi checksheet');
+                const tpl = await tplRes.json();
+
+                document.getElementById('v-title').innerText = cs.title;
+                const vTemplateEl = document.getElementById('v-template');
+                if (vTemplateEl) vTemplateEl.innerText = cs.template_title || tpl.title;
+                document.getElementById('v-filler').innerText = cs.filler_name || 'N/A';
+                const vLineEl = document.getElementById('v-line');
+                if (vLineEl) vLineEl.innerText = cs.line || 'Line 1';
+                
+                const vMachineEl = document.getElementById('v-machine');
+                const vMachineMetaItem = document.getElementById('v-machine-meta-item');
+                if (vMachineEl) {
+                    vMachineEl.innerText = cs.machine || 'N/A';
+                }
+                if (vMachineMetaItem) {
+                    if (cs.machine && cs.machine !== 'N/A') {
+                        vMachineMetaItem.style.display = 'block';
+                    } else {
+                        vMachineMetaItem.style.display = 'none';
+                    }
+                }
+                
+                const badge = document.getElementById('v-status');
+                badge.innerHTML = `<i data-lucide="check-circle" style="width:12px;height:12px;margin-right:5px;"></i> Hoàn Thành / Done`;
+                badge.className = `badge submitted`;
+
+                const formattedDate = new Date(cs.conducted_date || cs.created_at).toLocaleDateString('vi-VN', {
+                    day: '2-digit', month: '2-digit', year: 'numeric'
+                });
+                document.getElementById('v-date').innerText = formattedDate;
+
+                const container = document.getElementById('viewer-items-container');
+                container.innerHTML = `
+                    <div style="overflow-x: auto; width: 100%;">
+                        <table class="workspace-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;">STT</th>
+                                    <th style="width: 140px;">Hạng mục kiểm tra</th>
+                                    <th style="width: 380px;">Chi tiết kiểm tra</th>
+                                    <th style="width: 250px;">Tiêu chuẩn đánh giá</th>
+                                    <th style="width: 110px;">Tần suất kiểm tra</th>
+                                    <th style="width: 100px;">Phương pháp</th>
+                                    <th style="width: 140px;">Kết quả</th>
+                                </tr>
+                            </thead>
+                            <tbody id="viewer-table-body"></tbody>
+                        </table>
+                    </div>
+                `;
+                const tbody = document.getElementById('viewer-table-body');
+
+                tpl.items.forEach((item, index) => {
+                    const resp = cs.responses[item.id] || {};
+                    const row = document.createElement('tr');
+
+                    // Intelligent field extraction
+                    const category = item.category || 'Hạng mục chung';
+                    let label = item.label || '';
+                    let spec = item.spec || '-';
+                    const frequency = item.frequency || '1lần/ca';
+                    const method = item.method || 'Quan sát';
+
+                    if (spec === '-' && label.includes('(Spec:')) {
+                        const parts = label.split('(Spec:');
+                        label = parts[0].trim();
+                        spec = parts[1].replace(')', '').trim();
+                    }
+
+                    let statusBadge = '';
+                    let valText = '-';
+
+                    if (item.type === 'pass_fail_na' || item.type === 'pass_fail' || item.type === 'number') {
+                        const stat = resp.status || 'N/A';
+                        let displayStat = stat;
+                        if (stat === 'Pass') displayStat = 'OK';
+                        else if (stat === 'Fail') displayStat = 'NG';
+                        else if (stat === 'NA' || stat === 'N/A') displayStat = 'NA';
+
+                        statusBadge = `<span class="viewer-item-status-pill ${stat.toLowerCase().replace('/', '')}" style="display:inline-flex; align-items:center; justify-content:center; padding: 4px 10px; border-radius: var(--radius-sm); font-size:12px; font-weight:600; text-transform:uppercase; ${stat === 'Pass' ? 'background:rgba(16,185,129,0.15); color:var(--success-color); border:1px solid var(--success-color);' : stat === 'Fail' ? 'background:rgba(239,68,68,0.15); color:var(--danger-color); border:1px solid var(--danger-color);' : 'background:rgba(255,255,255,0.08); color:var(--text-muted);'}">${displayStat}</span>`;
+                        
+                        if (item.type === 'number') {
+                            const val = resp.value;
+                            const isNumeric = val !== null && val !== undefined && val !== '' && typeof val !== 'boolean' && !isNaN(val) && val !== 'Pass' && val !== 'Fail' && val !== 'NA' && val !== 'N/A' && val !== 'OK' && val !== 'NG';
+                            valText = isNumeric ? `Số đo: ${val}` : '';
+                        } else {
+                            valText = '';
+                        }
+                    } else if (item.type === 'checkbox') {
+                        const yesNo = resp.value === true ? 'YES' : 'NO';
+                        statusBadge = `<span class="viewer-item-status-pill checked" style="display:inline-flex; align-items:center; justify-content:center; padding: 4px 10px; border-radius: var(--radius-sm); font-size:12px; font-weight:600; background:rgba(99,102,241,0.15); color:var(--primary-color); border:1px solid var(--primary-color);">${yesNo}</span>`;
+                        valText = '';
+                    } else {
+                        valText = resp.value !== null && resp.value !== undefined ? resp.value : 'Chưa nhập';
+                    }
+
+                    const commentHtml = resp.comment 
+                        ? `<div style="margin-top:6px; font-size:12px; color:var(--text-muted); background:rgba(0,0,0,0.25); padding:6px 10px; border-radius:var(--radius-sm); border:1px solid var(--border-glass);"><i data-lucide="message-square" style="width:11px;height:11px;display:inline-block;vertical-align:middle;margin-right:4px;"></i>${resp.comment}</div>` 
+                        : '';
+
+                    row.innerHTML = `
+                        <td><strong>${index + 1}</strong></td>
+                        <td>${formatBilingualText(category)}</td>
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <span>${formatBilingualText(label)}</span>
+                            </div>
+                        </td>
+                        <td>${formatBilingualText(spec)}</td>
+                        <td>${formatBilingualText(frequency)}</td>
+                        <td>${formatBilingualText(method)}</td>
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    ${statusBadge}
+                                    <span style="font-size:13px; font-weight:500;">${valText}</span>
+                                </div>
+                                ${commentHtml}
+                            </div>
+                        </td>
+                    `;
+
+                    tbody.appendChild(row);
+                });
+
+                const sigBlock = document.getElementById('v-signature-wrapper');
+                const sigImg = document.getElementById('signature-img');
+                
+                if (cs.responses['__signature__'] && cs.responses['__signature__'].value) {
+                    sigBlock.style.display = 'block';
+                    sigImg.src = cs.responses['__signature__'].value;
+                } else {
+                    sigBlock.style.display = 'none';
+                }
+
+                lucide.createIcons();
+                
+                document.getElementById('checksheet-filler-pane').style.display = 'none';
+                document.getElementById('checksheet-empty-state').style.display = 'none';
+                document.getElementById('checksheet-viewer-pane').style.display = 'block';
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function resumeChecksheetDraftInline(cs) {
+            if (cs && cs.status === 'Submitted') {
+                showToast('Lượt kiểm tra này đã được gửi và khóa. Bạn chỉ có thể xem chi tiết.', 'info');
+                await viewChecksheetInline(cs);
+                return;
+            }
+            try {
+                const tplRes = await fetch(`/api/v1/templates/${cs.template_id}`);
+                if (!tplRes.ok) throw new Error('Không thể tải mẫu câu hỏi checksheet');
+                const tpl = await tplRes.json();
+
+                state.currentTemplate = tpl;
+                state.currentChecksheet = cs;
+
+                const titleInput = document.getElementById('cs-fill-title');
+                if (titleInput) titleInput.value = cs.title;
+                const inspectorInput = document.getElementById('cs-fill-inspector');
+                if (inspectorInput) inspectorInput.value = cs.filler_name || '';
+
+                const fillMachineSelect = document.getElementById('cs-fill-machine');
+                if (fillMachineSelect) {
+                    fillMachineSelect.value = cs.machine || 'N/A';
+                }
+
+                clearSignatureCanvas();
+
+                if (cs.responses['__signature__'] && cs.responses['__signature__'].value) {
+                    state.signatureData = cs.responses['__signature__'].value;
+                    drawSignatureFromBase64(state.signatureData);
+                }
+
+                renderFillerFields(tpl.items, cs.responses);
+                updateFillerProgress();
+
+                document.getElementById('checksheet-viewer-pane').style.display = 'none';
+                document.getElementById('checksheet-empty-state').style.display = 'none';
+                document.getElementById('checksheet-filler-pane').style.display = 'block';
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function startNewChecksheetInline(operation, date) {
+            try {
+                const project = document.getElementById('cs-fill-project').value;
+                const prefix = project === 'Co-molded' ? 'co_' : 'se_';
+                let lookupOp = operation;
+                if (!lookupOp.startsWith('co_') && !lookupOp.startsWith('se_')) {
+                    lookupOp = prefix + lookupOp;
+                }
+
+                const response = await fetch(`/api/v1/templates/by-operation?operation=${encodeURIComponent(lookupOp)}&project=${encodeURIComponent(project)}`);
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error(`Không tìm thấy mẫu thiết kế checksheet cho công đoạn "${operation.toUpperCase()}" (${project})`);
+                    }
+                    throw new Error('Không thể tải dữ liệu mẫu của công đoạn');
+                }
+                const tpl = await response.json();
+
+                state.currentTemplate = tpl;
+                state.currentChecksheet = null;
+
+                const titleInput = document.getElementById('cs-fill-title');
+                if (titleInput) titleInput.value = `${tpl.title} - ${date}`;
+                const inspectorInput = document.getElementById('cs-fill-inspector');
+                if (inspectorInput) inspectorInput.value = currentUser ? currentUser.username : '';
+
+                clearSignatureCanvas();
+                renderFillerFields(tpl.items, {});
+                updateFillerProgress();
+
+                document.getElementById('checksheet-viewer-pane').style.display = 'none';
+                document.getElementById('checksheet-empty-state').style.display = 'none';
+                document.getElementById('checksheet-filler-pane').style.display = 'block';
+            } catch (err) {
+                showToast(err.message, 'error');
+                document.getElementById('checksheet-filler-pane').style.display = 'none';
+                document.getElementById('checksheet-viewer-pane').style.display = 'none';
+                document.getElementById('checksheet-empty-state').style.display = 'block';
+            }
+        }
+
+        async function viewChecksheet(checksheetId) {
+            try {
+                const csRes = await fetch(`/api/v1/checksheets/${checksheetId}`);
+                if (!csRes.ok) throw new Error('Failed to load checksheet details');
+                const cs = await csRes.json();
+                
+                // Sync selectors
+                document.getElementById('cs-fill-project').value = cs.project || '';
+                const fillLineSelect = document.getElementById('cs-fill-line');
+                if (fillLineSelect) fillLineSelect.value = cs.line || 'Line 1';
+                updateOperationOptions('cs-fill-project', 'cs-fill-operation', false, cs.operation || '');
+                document.getElementById('cs-fill-date').value = cs.conducted_date || cs.created_at.split('T')[0];
+                
+                // Sync machine select
+                const fillMachineSelect = document.getElementById('cs-fill-machine');
+                const machineWrapper = document.getElementById('machine-select-wrapper');
+                if (fillMachineSelect) {
+                    fillMachineSelect.value = cs.machine || 'N/A';
+                }
+                if (machineWrapper) {
+                    if (cs.operation === 'avi') {
+                        machineWrapper.style.display = 'block';
+                    } else {
+                        machineWrapper.style.display = 'none';
+                    }
+                }
+                
+                await viewChecksheetInline(cs);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function resumeChecksheetDraft(checksheetId) {
+            try {
+                const csRes = await fetch(`/api/v1/checksheets/${checksheetId}`);
+                if (!csRes.ok) throw new Error('Failed to load checksheet details');
+                const cs = await csRes.json();
+                
+                if (cs && cs.status === 'Submitted') {
+                    showToast('Lượt kiểm tra này đã được gửi và khóa. Bạn chỉ có thể xem chi tiết.', 'info');
+                    await viewChecksheet(checksheetId);
+                    return;
+                }
+                
+                // Sync selectors
+                document.getElementById('cs-fill-project').value = cs.project || '';
+                const fillLineSelect = document.getElementById('cs-fill-line');
+                if (fillLineSelect) fillLineSelect.value = cs.line || 'Line 1';
+                updateOperationOptions('cs-fill-project', 'cs-fill-operation', false, cs.operation || '');
+                document.getElementById('cs-fill-date').value = cs.conducted_date || cs.created_at.split('T')[0];
+                
+                // Sync machine select
+                const fillMachineSelect = document.getElementById('cs-fill-machine');
+                const machineWrapper = document.getElementById('machine-select-wrapper');
+                if (fillMachineSelect) {
+                    fillMachineSelect.value = cs.machine || 'N/A';
+                }
+                if (machineWrapper) {
+                    if (cs.operation === 'avi') {
+                        machineWrapper.style.display = 'block';
+                    } else {
+                        machineWrapper.style.display = 'none';
+                    }
+                }
+                
+                await resumeChecksheetDraftInline(cs);
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function formatBilingualText(text) {
+            if (!text) return '-';
+            let cleanText = String(text).replace(/\r/g, '').trim();
+            if (cleanText === '-' || cleanText === '•' || cleanText === '○' || cleanText === '●') {
+                return `<span style="color: #000000; font-weight: 500; font-size: 13px;">${cleanText}</span>`;
+            }
+
+            let vi = '';
+            let en = '';
+
+            if (cleanText.includes('\n')) {
+                const parts = cleanText.split('\n');
+                vi = parts[0].trim();
+                en = parts.slice(1).join(' ').trim();
+            } else if (cleanText.includes(' / ')) {
+                const parts = cleanText.split(' / ');
+                vi = parts[0].trim();
+                en = parts.slice(1).join(' / ').trim();
+            } else {
+                const enKeywords = [
+                    'Check', 'Checking', 'Power', 'Fan', 'Temperrature', 'Temperature', 'Device', '5S', 
+                    'Cleaniness', 'Cleanliness', 'No ', 'Normal', 'Sink', 'Color', 'Surface', 'Adhesion', 
+                    'Optical', 'Alignment', 'Thickness', 'UV', 'Curing', 'Peeling', 'Gloss', 'Pinholes', 
+                    'Dust', 'Gas', 'Pressure', 'Current', 'Burrs', 'Laser', 'Cut', 'Edge', 'Burn', 
+                    'Post-laser', 'Dimensions', 'Accuracy', 'Notes', 'Scanlable', 'Jig', 'cleaniness', 'no '
+                ];
+                
+                let splitIdx = -1;
+                for (const kw of enKeywords) {
+                    const idx = cleanText.indexOf(kw);
+                    if (idx > 1 && (cleanText[idx-1] === ' ' || cleanText[idx-1] === '(')) {
+                        if (splitIdx === -1 || idx < splitIdx) {
+                            splitIdx = idx;
+                        }
+                    }
+                }
+                
+                if (splitIdx !== -1) {
+                    vi = cleanText.substring(0, splitIdx).trim();
+                    en = cleanText.substring(splitIdx).trim();
+                } else {
+                    vi = cleanText;
+                }
+            }
+
+            if (vi && en) {
+                return `<div style="display: flex; flex-direction: column; gap: 2px; line-height: 1.3;">
+                            <span style="color: #000000; font-weight: 600; font-size: 13px;">${vi}</span>
+                            <span style="color: #111827; font-style: italic; font-weight: 500; font-size: 12px; margin-top: 1px;">${en}</span>
+                        </div>`;
+            } else {
+                return `<span style="color: #000000; font-weight: 600; font-size: 13px;">${vi || cleanText}</span>`;
+            }
+        }
+
+        function renderFillerFields(items, savedResponses) {
+            const container = document.getElementById('filler-fields-container');
+            if (!container) return; // simple upload mode!
+            
+            container.innerHTML = `
+                <div style="overflow-x: auto; width: 100%;">
+                    <table class="workspace-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">STT</th>
+                                <th style="width: 140px;">Hạng mục kiểm tra</th>
+                                <th style="width: 380px;">Chi tiết kiểm tra</th>
+                                <th style="width: 250px;">Tiêu chuẩn đánh giá</th>
+                                <th style="width: 110px;">Tần suất kiểm tra</th>
+                                <th style="width: 100px;">Phương pháp</th>
+                                <th style="width: 180px;">Kết quả</th>
+                            </tr>
+                        </thead>
+                        <tbody id="filler-table-body"></tbody>
+                    </table>
+                </div>
+            `;
+            const tbody = document.getElementById('filler-table-body');
+
+            items.forEach((item, index) => {
+                const saved = savedResponses[item.id] || {};
+                const row = document.createElement('tr');
+                row.id = `filler-row-${item.id}`;
+                row.className = 'filler-field-row';
+
+                // Intelligent field extraction
+                const category = item.category || 'Hạng mục chung';
+                let label = item.label || '';
+                let spec = item.spec || '-';
+                const frequency = item.frequency || '1lần/ca';
+                const method = item.method || 'Quan sát';
+
+                if (spec === '-' && label.includes('(Spec:')) {
+                    const parts = label.split('(Spec:');
+                    label = parts[0].trim();
+                    spec = parts[1].replace(')', '').trim();
+                }
+
+                let inputHtml = '';
+                if (item.type === 'pass_fail_na' || item.type === 'pass_fail') {
+                    const checkedPass = saved.status === 'Pass' ? 'checked' : '';
+                    const checkedFail = saved.status === 'Fail' ? 'checked' : '';
+                    const checkedNA = '';
+
+                    const radioHtml = `
+                        <div class="result-status-group" style="display: flex; gap: 8px;">
+                            <label class="status-pill-btn pass">
+                                <input type="radio" name="input-${item.id}" id="pass-${item.id}" value="Pass" ${checkedPass} required-field="${item.required}">
+                                <span>OK</span>
+                            </label>
+                            <label class="status-pill-btn fail">
+                                <input type="radio" name="input-${item.id}" id="fail-${item.id}" value="Fail" ${checkedFail}>
+                                <span>NG</span>
+                            </label>
+                            <label class="status-pill-btn na">
+                                <input type="radio" name="input-${item.id}" id="na-${item.id}" value="NA" ${checkedNA}>
+                                <span>NA</span>
+                            </label>
+                        </div>
+                    `;
+
+                    inputHtml = radioHtml;
+                } else if (item.type === 'number') {
+                    const textVal = saved.value !== null && saved.value !== undefined ? saved.value : '';
+                    let liveStatusHtml = '';
+                    if (textVal !== '') {
+                        const status = evaluateNumericSpec(textVal, item.spec);
+                        const bgStyle = status === 'Pass' ? 'background:rgba(16,185,129,0.15); color:var(--success-color); border:1px solid var(--success-color);' : status === 'Fail' ? 'background:rgba(239,68,68,0.15); color:var(--danger-color); border:1px solid var(--danger-color);' : 'background:rgba(255,255,255,0.08); color:var(--text-muted); border:1px solid var(--border-glass);';
+                        const labelText = status === 'Pass' ? 'OK' : (status === 'Fail' ? 'NG' : 'NA');
+                        liveStatusHtml = `<span id="status-badge-${item.id}" class="viewer-item-status-pill" style="display:inline-flex; align-items:center; justify-content:center; padding: 2px 8px; border-radius: var(--radius-sm); font-size:11px; font-weight:600; margin-top:4px; ${bgStyle}">${labelText}</span>`;
+                    } else {
+                        liveStatusHtml = `<span id="status-badge-${item.id}" class="viewer-item-status-pill" style="display:none; align-items:center; justify-content:center; padding: 2px 8px; border-radius: var(--radius-sm); font-size:11px; font-weight:600; margin-top:4px;"></span>`;
+                    }
+
+                    inputHtml = `
+                        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+                            <input type="text" id="input-${item.id}" class="table-input-text numeric-input" placeholder="Điền số đo..." value="${textVal}" required-field="${item.required}" oninput="updateLiveNumericStatus('${item.id}', this.value, '${(item.spec || '-').replace(/'/g, "\\'")}')">
+                            ${liveStatusHtml}
+                        </div>
+                    `;
+                } else if (item.type === 'checkbox') {
+                    const checked = saved.value === true ? 'checked' : '';
+                    inputHtml = `
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="input-${item.id}" ${checked} required-field="${item.required}">
+                            <span class="slider"></span>
+                        </label>
+                    `;
+                } else if (item.type === 'text') {
+                    const textVal = saved.value || '';
+                    inputHtml = `
+                        <input type="text" id="input-${item.id}" class="table-input-text" placeholder="Nhập ghi chú..." value="${textVal}" required-field="${item.required}">
+                    `;
+                }
+
+                const noteActive = saved.comment ? 'active' : '';
+                const noteDisplay = saved.comment ? 'block' : 'none';
+
+                row.innerHTML = `
+                    <td><strong>${index + 1}</strong></td>
+                    <td>${formatBilingualText(category)}</td>
+                    <td>
+                        <div>
+                            <span style="display: inline-block; vertical-align: middle;">${formatBilingualText(label)}</span>
+                            ${item.required ? '<span style="color:var(--danger-color); font-weight:bold; vertical-align: middle; margin-left: 2px;">*</span>' : ''}
+                        </div>
+                    </td>
+                    <td>${formatBilingualText(spec)}</td>
+                    <td>${formatBilingualText(frequency)}</td>
+                    <td>${formatBilingualText(method)}</td>
+                    <td>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <div class="field-input-wrapper">
+                                ${inputHtml}
+                            </div>
+                            <div style="display: flex; gap: 8px; margin-top: 4px;">
+                                <button type="button" class="field-comment-trigger ${noteActive}" style="background:transparent; border:0; color:var(--text-muted); cursor:pointer; font-size:11px; display:flex; align-items:center; gap:4px; outline:none; transition:var(--transition-smooth);">
+                                    <i data-lucide="message-square" style="width:12px;height:12px;"></i>
+                                    <span>${saved.comment ? 'Sửa Ghi Chú' : 'Thêm Ghi Chú'}</span>
+                                </button>
+                            </div>
+                            <div class="field-comment-box" id="comment-box-${item.id}" style="display: ${noteDisplay}; margin-top: 6px;">
+                                <textarea id="comment-${item.id}" placeholder="Nhập ghi chú chi tiết..." rows="2" style="width:100%; padding: 8px; background: rgba(0,0,0,0.4); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); color:#fff; font-size:12px; outline:none; resize:none;">${saved.comment || ''}</textarea>
+                            </div>
+                        </div>
+                    </td>
+                `;
+
+                // Add event listeners
+                row.querySelector('.field-comment-trigger').onclick = (e) => {
+                    e.stopPropagation();
+                    const box = row.querySelector('.field-comment-box');
+                    const inp = row.querySelector('.field-comment-box textarea');
+                    const span = e.currentTarget.querySelector('span');
+
+                    if (box.style.display === 'block') {
+                        box.style.display = 'none';
+                        span.innerText = inp.value.trim() ? 'Sửa Ghi Chú' : 'Thêm Ghi Chú';
+                    } else {
+                        box.style.display = 'block';
+                        span.innerText = 'Đóng';
+                        inp.focus();
+                    }
+                };
+
+                // Add onchange bindings for progress and real-time evaluation
+                if (item.type === 'pass_fail_na' || item.type === 'pass_fail') {
+                    row.querySelectorAll(`input[name="input-${item.id}"]`).forEach(r => {
+                        r.onchange = updateFillerProgress;
+                    });
+                } else if (item.type === 'number') {
+                    row.querySelectorAll(`input[name="input-${item.id}"]`).forEach(r => {
+                        r.onchange = updateFillerProgress;
+                    });
+                    
+                    const numInput = row.querySelector(`#input-${item.id}`);
+                    if (numInput) {
+                        const handler = (e) => {
+                            const val = e.target.value.trim();
+                            const status = evaluateNumericSpec(val, item.spec);
+                            if (status === 'Pass') {
+                                const passRadio = row.querySelector(`#pass-${item.id}`);
+                                if (passRadio) passRadio.checked = true;
+                            } else if (status === 'Fail') {
+                                const failRadio = row.querySelector(`#fail-${item.id}`);
+                                if (failRadio) failRadio.checked = true;
+                            } else {
+                                // Clear if empty
+                                row.querySelectorAll(`input[name="input-${item.id}"]`).forEach(r => r.checked = false);
+                            }
+                            updateFillerProgress();
+                        };
+                        numInput.oninput = handler;
+                        numInput.onchange = handler;
+                    }
+                } else {
+                    row.querySelector(`#input-${item.id}`).oninput = updateFillerProgress;
+                    row.querySelector(`#input-${item.id}`).onchange = updateFillerProgress;
+                }
+
+                tbody.appendChild(row);
+            });
+
+            lucide.createIcons();
+        }
+
+        function updateFillerProgress() {
+            if (!state.currentTemplate) return;
+
+            const items = state.currentTemplate.items;
+            let requiredTotal = 0;
+            let requiredFilled = 0;
+            let passCount = 0;
+            let failCount = 0;
+
+            items.forEach(item => {
+                let isFilled = false;
+                if (item.type === 'pass_fail_na' || item.type === 'pass_fail' || item.type === 'number') {
+                    const radio = document.querySelector(`input[name="input-${item.id}"]:checked`);
+                    if (radio) {
+                        isFilled = true;
+                        if (radio.value === 'Pass') passCount++;
+                        if (radio.value === 'Fail') failCount++;
+                    }
+                    if (item.type === 'number') {
+                        const inputEl = document.getElementById(`input-${item.id}`);
+                        const raw = inputEl ? inputEl.value : '';
+                        if (raw === '') isFilled = false;
+                    }
+                } else if (item.type === 'checkbox') {
+                    const checkedEl = document.getElementById(`input-${item.id}`);
+                    const checked = checkedEl ? checkedEl.checked : false;
+                    isFilled = checked;
+                    if (checked) passCount++;
+                } else {
+                    const inputEl = document.getElementById(`input-${item.id}`);
+                    const val = inputEl ? inputEl.value.trim() : '';
+                    isFilled = val !== '';
+                }
+
+                if (item.required) {
+                    requiredTotal++;
+                    if (isFilled) requiredFilled++;
+                }
+            });
+
+            const pct = requiredTotal > 0 ? Math.round((requiredFilled / requiredTotal) * 100) : 100;
+
+            // Update new text-based HUD if it exists
+            const pText = document.getElementById('filler-progress-text');
+            const pPct = document.getElementById('filler-progress-pct');
+            if (pText) pText.innerText = `${requiredFilled}/${requiredTotal}`;
+            if (pPct) pPct.innerText = `${pct}%`;
+
+            const ring = document.getElementById('hud-progress-ring');
+            if (ring) {
+                const radius = ring.r.baseVal.value;
+                const circumference = 2 * Math.PI * radius;
+                const offset = circumference - (pct / 100) * circumference;
+                ring.style.strokeDashoffset = offset;
+
+                const pctEl = document.getElementById('hud-progress-pct');
+                const compEl = document.getElementById('hud-completed-count');
+                const passEl = document.getElementById('hud-pass-count');
+                const failEl = document.getElementById('hud-fail-count');
+                if (pctEl) pctEl.innerText = `${pct}%`;
+                if (compEl) compEl.innerText = `${requiredFilled} / ${requiredTotal}`;
+                if (passEl) passEl.innerText = passCount;
+                if (failEl) failEl.innerText = failCount;
+            }
+        }
+
+        function initSignaturePad() {
+            const canvas = document.getElementById('signature-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            const clearBtn = document.getElementById('btn-clear-sig');
+            if (clearBtn) {
+                clearBtn.onclick = clearSignatureCanvas;
+            }
+
+            const drawMove = (x, y) => {
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            };
+
+            const drawStart = (x, y) => {
+                state.isDrawing = true;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            };
+
+            // Mouse events
+            canvas.onmousedown = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                drawStart(e.clientX - rect.left, e.clientY - rect.top);
+            };
+            canvas.onmousemove = (e) => {
+                if (!state.isDrawing) return;
+                const rect = canvas.getBoundingClientRect();
+                drawMove(e.clientX - rect.left, e.clientY - rect.top);
+            };
+            canvas.onmouseup = () => {
+                state.isDrawing = false;
+                state.signatureData = canvas.toDataURL();
+            };
+            canvas.onmouseleave = () => { state.isDrawing = false; };
+
+            // Touch events
+            canvas.ontouchstart = (e) => {
+                if (e.touches.length === 1) {
+                    e.preventDefault();
+                    const rect = canvas.getBoundingClientRect();
+                    drawStart(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
+                }
+            };
+            canvas.ontouchmove = (e) => {
+                if (state.isDrawing && e.touches.length === 1) {
+                    e.preventDefault();
+                    const rect = canvas.getBoundingClientRect();
+                    drawMove(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
+                }
+            };
+            canvas.ontouchend = () => {
+                state.isDrawing = false;
+                state.signatureData = canvas.toDataURL();
+            };
+        }
+
+        function clearSignatureCanvas() {
+            const canvas = document.getElementById('signature-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            state.signatureData = null;
+        }
+
+        function drawSignatureFromBase64(base64) {
+            const canvas = document.getElementById('signature-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.src = base64;
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+            };
+        }
+
+        function updateLiveNumericStatus(itemId, value, spec) {
+            const badge = document.getElementById(`status-badge-${itemId}`);
+            if (!badge) return;
+            if (value.trim() === '') {
+                badge.style.display = 'none';
+                return;
+            }
+            const status = evaluateNumericSpec(value.trim(), spec);
+            badge.style.display = 'inline-flex';
+            if (status === 'Pass') {
+                badge.innerText = 'OK';
+                badge.style.background = 'rgba(16,185,129,0.15)';
+                badge.style.color = 'var(--success-color)';
+                badge.style.border = '1px solid var(--success-color)';
+            } else if (status === 'Fail') {
+                badge.innerText = 'NG';
+                badge.style.background = 'rgba(239,68,68,0.15)';
+                badge.style.color = 'var(--danger-color)';
+                badge.style.border = '1px solid var(--danger-color)';
+            } else {
+                badge.innerText = 'NA';
+                badge.style.background = 'rgba(255,255,255,0.08)';
+                badge.style.color = 'var(--text-muted)';
+                badge.style.border = '1px solid var(--border-glass)';
+            }
+        }
+
+        function evaluateNumericSpec(value, spec) {
+            if (value === null || value === undefined || value === '') return 'NA';
+            const val = parseFloat(value);
+            if (isNaN(val)) return 'NA';
+
+            const specClean = String(spec || '').trim().replace(/\s+/g, '').toLowerCase();
+            if (!specClean || specClean === '-') return 'Pass';
+
+            try {
+                // Range check like 0.5~1.5 or 0.5-1.5
+                if (specClean.includes('~') || specClean.includes('to')) {
+                    const parts = specClean.split(/[~]|to/);
+                    const min = parseFloat(parts[0]);
+                    const max = parseFloat(parts[1]);
+                    if (!isNaN(min) && !isNaN(max)) {
+                        return (val >= min && val <= max) ? 'Pass' : 'Fail';
+                    }
+                }
+                
+                // Plus-minus check like 30±5 or 30+-5
+                if (specClean.includes('±') || specClean.includes('+/-') || specClean.includes('+-')) {
+                    const separator = specClean.includes('±') ? '±' : (specClean.includes('+/-') ? '+/-' : '+-');
+                    const parts = specClean.split(separator);
+                    const base = parseFloat(parts[0]);
+                    const tolerance = parseFloat(parts[1]);
+                    if (!isNaN(base) && !isNaN(tolerance)) {
+                        return (val >= (base - tolerance) && val <= (base + tolerance)) ? 'Pass' : 'Fail';
+                    }
+                }
+
+                // Greater than or equal to: >= or ≤
+                if (specClean.includes('>=') || specClean.includes('≥')) {
+                    const limit = parseFloat(specClean.replace(/>=|≥/, ''));
+                    if (!isNaN(limit)) return val >= limit ? 'Pass' : 'Fail';
+                }
+
+                // Less than or equal to: <= or ≤
+                if (specClean.includes('<=') || specClean.includes('≤')) {
+                    const limit = parseFloat(specClean.replace(/<=|≤/, ''));
+                    if (!isNaN(limit)) return val <= limit ? 'Pass' : 'Fail';
+                }
+
+                // Greater than: >
+                if (specClean.includes('>')) {
+                    const limit = parseFloat(specClean.replace('>', ''));
+                    if (!isNaN(limit)) return val > limit ? 'Pass' : 'Fail';
+                }
+
+                // Less than: <
+                if (specClean.includes('<')) {
+                    const limit = parseFloat(specClean.replace('<', ''));
+                    if (!isNaN(limit)) return val < limit ? 'Pass' : 'Fail';
+                }
+
+                // Exact match or single number fallback (e.g. spec is "12")
+                const singleNum = parseFloat(specClean.match(/[-+]?[0-9]*\.?[0-9]+/));
+                if (!isNaN(singleNum)) {
+                    return val === singleNum ? 'Pass' : 'Fail';
+                }
+
+            } catch (e) {
+                console.error('Error evaluating spec:', spec, e);
+            }
+
+            return 'Pass'; // Default fallback
+        }
+
+        async function saveChecksheetInstance(submitStatus = 'Submitted') {
+            if (state.currentChecksheet && state.currentChecksheet.status === 'Submitted') {
+                showToast('Phiếu kiểm tra này đã được gửi và khóa. Không thể chỉnh sửa hoặc gửi lại.', 'error');
+                return;
+            }
+
+            const title = document.getElementById('cs-fill-title').value.trim();
+            const project = document.getElementById('cs-fill-project').value;
+            const line = document.getElementById('cs-fill-line') ? document.getElementById('cs-fill-line').value : 'Line 1';
+            const operation = document.getElementById('cs-fill-operation').value;
+            const conductedDate = document.getElementById('cs-fill-date').value;
+            const fillerName = document.getElementById('cs-fill-inspector').value.trim();
+
+            if (!title) {
+                showToast('Please specify a Checkshet Instance Title', 'error');
+                return;
+            }
+
+            if (!operation) {
+                showToast('Vui lòng chọn Công đoạn trước khi lưu hoặc gửi!', 'error');
+                document.getElementById('cs-fill-operation').focus();
+                return;
+            }
+
+            if (!state.currentTemplate) {
+                showToast('Không tìm thấy dữ liệu mẫu kiểm tra cho công đoạn này. Vui lòng chọn lại công đoạn!', 'error');
+                return;
+            }
+
+            if (submitStatus === 'Submitted' && !fillerName) {
+                showToast('Inspector Name is required for checksheet submission', 'error');
+                document.getElementById('cs-fill-inspector').focus();
+                return;
+            }
+
+            const items = state.currentTemplate.items;
+            const responses = {};
+            let missingRequired = false;
+
+            items.forEach(item => {
+                let value = null;
+                let itemStatus = null;
+
+                if (item.type === 'pass_fail_na' || item.type === 'pass_fail') {
+                    const radio = document.querySelector(`input[name="input-${item.id}"]:checked`);
+                    if (radio) {
+                        itemStatus = radio.value;
+                    }
+                    value = itemStatus;
+                } else if (item.type === 'number') {
+                    const inputEl = document.getElementById(`input-${item.id}`);
+                    value = inputEl ? inputEl.value.trim() : '';
+                    if (value !== '') {
+                        itemStatus = evaluateNumericSpec(value, item.spec);
+                    } else {
+                        itemStatus = 'NA';
+                    }
+                } else if (item.type === 'checkbox') {
+                    value = document.getElementById(`input-${item.id}`).checked;
+                    itemStatus = value ? 'Pass' : 'NA';
+                } else if (item.type === 'text') {
+                    value = document.getElementById(`input-${item.id}`).value.trim();
+                }
+
+                const comment = document.getElementById(`comment-${item.id}`).value.trim();
+
+                if (submitStatus === 'Submitted' && item.required) {
+                    let isMissing = false;
+                    if (item.type === 'pass_fail' || item.type === 'pass_fail_na') {
+                        isMissing = !itemStatus;
+                    } else if (item.type === 'number' || item.type === 'text') {
+                        isMissing = (value === null || value === '');
+                    }
+                    if (isMissing) {
+                        document.getElementById(`filler-row-${item.id}`).classList.add('active-field');
+                        missingRequired = true;
+                    }
+                }
+
+                responses[item.id] = {
+                    value: value,
+                    status: itemStatus,
+                    comment: comment || null
+                };
+            });
+
+            if (state.signatureData) {
+                responses['__signature__'] = {
+                    value: state.signatureData,
+                    status: 'Pass',
+                    comment: 'Digital Signature'
+                };
+            }
+
+            if (submitStatus === 'Submitted' && missingRequired) {
+                showToast('Please fill out all required checklist fields', 'error');
+                return;
+            }
+
+            const machine = document.getElementById('cs-fill-machine') ? document.getElementById('cs-fill-machine').value : 'N/A';
+
+            const payload = {
+                template_id: state.currentTemplate.id,
+                title: title,
+                status: submitStatus,
+                filler_name: fillerName || 'N/A',
+                project: project,
+                line: line,
+                machine: machine,
+                operation: operation,
+                conducted_date: conductedDate,
+                responses: responses
+            };
+
+            const btnSaveDraft = document.getElementById('btn-save-draft');
+            const btnSubmit = document.getElementById('btn-submit-checksheet');
+            if (btnSaveDraft) btnSaveDraft.disabled = true;
+            if (btnSubmit) btnSubmit.disabled = true;
+
+            try {
+                let url = '/api/v1/checksheets';
+                let method = 'POST';
+
+                if (state.currentChecksheet) {
+                    url = `/api/v1/checksheets/${state.currentChecksheet.id}`;
+                    method = 'PUT';
+                }
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || errData.detail || 'API save checksheet operation failed');
+                }
+
+                const result = await response.json();
+
+                if (submitStatus === 'Draft') {
+                    // Keep form open — store saved checksheet so next action uses PUT
+                    state.currentChecksheet = result;
+                    showToast('Đã lưu nháp thành công! Bạn có thể tiếp tục và ấn "Gửi kết quả" khi hoàn tất.', 'info');
+                    refreshDashboard();
+                } else {
+                    // Submitted — close form and refresh
+                    showToast('Đã gửi kết quả kiểm tra lên lưu trữ thành công!', 'info');
+                    window.history.pushState({}, '', '/dashboard');
+                    refreshDashboard();
+                    document.getElementById('cs-fill-operation').value = '';
+                    loadActiveChecksheet();
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                if (btnSaveDraft) btnSaveDraft.disabled = false;
+                if (btnSubmit) btnSubmit.disabled = false;
+            }
+        }
+
+        async function refreshDashboard() {
+            try {
+                const dateInput = document.getElementById('analytics-date');
+                const dateVal = dateInput ? dateInput.value : '';
+                const response = await fetch(`/api/v1/stats?date=${dateVal}`);
+                if (!response.ok) throw new Error('Failed to retrieve dashboard stats');
+                const stats = await response.json();
+
+                // Hydrate stat numbers if they exist
+                const templatesCountEl = document.getElementById('stat-templates-count');
+                if (templatesCountEl) templatesCountEl.innerText = stats.total_templates;
+
+                const checksheetsCountEl = document.getElementById('stat-checksheets-count');
+                if (checksheetsCountEl) checksheetsCountEl.innerText = stats.total_checksheets;
+
+                const submittedCountEl = document.getElementById('stat-submitted-count');
+                if (submittedCountEl) submittedCountEl.innerText = stats.submitted_checksheets;
+
+                const draftsCountEl = document.getElementById('stat-drafts-count');
+                if (draftsCountEl) draftsCountEl.innerText = stats.draft_checksheets;
+
+                const passRateEl = document.getElementById('stat-pass-rate-val');
+                if (passRateEl) passRateEl.innerText = `${stats.overall_pass_rate}%`;
+
+                const passBarEl = document.getElementById('stat-pass-bar');
+                if (passBarEl) passBarEl.style.width = `${stats.overall_pass_rate}%`;
+
+                const failRateEl = document.getElementById('stat-fail-rate-val');
+                if (failRateEl) failRateEl.innerText = `${stats.overall_fail_rate}%`;
+
+                const failBarEl = document.getElementById('stat-fail-bar');
+                if (failBarEl) failBarEl.style.width = `${stats.overall_fail_rate}%`;
+
+                // Hydrate project metrics
+                const seStats = stats.se_stats || { total: 0, submitted: 0, draft: 0 };
+                const coStats = stats.co_stats || { total: 0, submitted: 0, draft: 0 };
+
+                // Update SE HTML Elements
+                document.getElementById('se-total').innerText = seStats.total;
+                document.getElementById('se-submitted').innerText = seStats.submitted;
+                document.getElementById('se-draft').innerText = seStats.draft;
+                
+                const sePct = seStats.total > 0 ? Math.round((seStats.submitted / seStats.total) * 100) : 0;
+                document.getElementById('se-completion-pct').innerText = `${sePct}%`;
+                document.getElementById('se-progress-bar').style.width = `${sePct}%`;
+
+                // Update Co-molded HTML Elements
+                document.getElementById('co-total').innerText = coStats.total;
+                document.getElementById('co-submitted').innerText = coStats.submitted;
+                document.getElementById('co-draft').innerText = coStats.draft;
+
+                const coPct = coStats.total > 0 ? Math.round((coStats.submitted / coStats.total) * 100) : 0;
+                document.getElementById('co-completion-pct').innerText = `${coPct}%`;
+                document.getElementById('co-progress-bar').style.width = `${coPct}%`;
+
+                // Re-run lucide icons creation for new items
+                lucide.createIcons();
+
+                // Render Chart.js Compliance Graph if container exists
+                const chartEl = document.getElementById('complianceChart');
+                if (chartEl) {
+                    renderComplianceChart(stats.overall_pass_rate, stats.overall_fail_rate, stats.overall_na_rate);
+                }
+
+                // Populate recent list table if container exists
+                const tbody = document.getElementById('recent-checksheets-tbody');
+                if (tbody) {
+                    tbody.innerHTML = '';
+
+                    if (stats.recent_submissions.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No checksheet submissions recorded.</td></tr>`;
+                    } else {
+                        stats.recent_submissions.forEach(cs => {
+                            const tr = document.createElement('tr');
+                            const badgeClass = cs.status.toLowerCase() === 'submitted' ? 'submitted' : 'draft';
+                            const formattedDate = new Date(cs.created_at).toLocaleDateString('vi-VN', {
+                                hour: '2-digit', minute: '2-digit'
+                            });
+
+                            tr.innerHTML = `
+                                <td><strong>${cs.title}</strong></td>
+                                <td>${cs.template_title || 'N/A'}</td>
+                                <td><span class="badge ${badgeClass}">${cs.status}</span></td>
+                                <td>${cs.filler_name || 'N/A'}</td>
+                                <td>${formattedDate}</td>
+                            `;
+                            
+                            tr.style.cursor = 'pointer';
+                            tr.addEventListener('click', () => {
+                                if (cs.status === 'Draft') {
+                                    resumeChecksheetDraft(cs.id);
+                                } else {
+                                    viewChecksheet(cs.id);
+                                }
+                            });
+
+                            tbody.appendChild(tr);
+                        });
+                    }
+                }
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function renderComplianceChart(pass, fail, na) {
+            const chartEl = document.getElementById('complianceChart');
+            if (!chartEl) return;
+            const ctx = chartEl.getContext('2d');
+            if (complianceChartRef) {
+                complianceChartRef.destroy();
+            }
+
+            const isEmpty = pass === 0 && fail === 0 && na === 0;
+
+            complianceChartRef = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: isEmpty ? ['No Data'] : ['Pass Rate', 'Failure Rate', 'N/A State'],
+                    datasets: [{
+                        data: isEmpty ? [100] : [pass, fail, na],
+                        backgroundColor: isEmpty 
+                            ? ['rgba(255,255,255,0.05)']
+                            : ['#10b981', '#ef4444', '#f59e0b'],
+                        borderColor: '#141a2e',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#8892b0',
+                                font: { family: 'Inter', size: 12 }
+                            }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        // ========== Admin User Management Functions ==========
+
+        async function loadAdminUsers() {
+            const tbody = document.getElementById('admin-users-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Đang tải danh sách...</td></tr>';
+
+            try {
+                const res = await fetch('/api/v1/admin/users');
+                if (!res.ok) throw new Error('Không thể tải danh sách người dùng');
+                const data = await res.json();
+                const users = data.users || [];
+
+                if (users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Không có tài khoản nào</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                users.forEach((u, i) => {
+                    const tr = document.createElement('tr');
+
+                    // Status badge
+                    let statusBadge = '';
+                    if (u.status === 'pending') {
+                        statusBadge = '<span class="badge draft" style="font-size:12px;">⏳ Chờ duyệt</span>';
+                    } else if (u.status === 'approved') {
+                        statusBadge = '<span class="badge submitted" style="font-size:12px;">✅ Đã duyệt</span>';
+                    } else {
+                        statusBadge = '<span class="badge" style="background:rgba(239,68,68,0.15);color:var(--danger-color);border:1px solid rgba(239,68,68,0.3);font-size:12px;">❌ Từ chối</span>';
+                    }
+
+                    // Role select
+                    const roleSelect = `
+                        <select class="filter-select" style="padding:6px 10px;font-size:12px;min-width:90px;" onchange="adminSetRole('${u.id}', this.value)" ${u.username === currentUser?.username ? 'disabled title=\"Không thể đổi quyền chính mình\"' : ''}>
+                            <option value="user" ${u.role === 'user' ? 'selected' : ''}>User</option>
+                            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                        </select>
+                    `;
+
+                    // Actions
+                    let actions = '';
+                    if (u.status === 'pending') {
+                        actions += `<button class="btn btn-outline" style="padding:4px 10px;font-size:11px;color:var(--success-color);border-color:rgba(16,185,129,0.3);" onclick="adminApproveUser('${u.id}')">✅ Duyệt</button> `;
+                    }
+                    if (u.username !== currentUser?.username) {
+                        actions += `<button class="btn btn-outline" style="padding:4px 10px;font-size:11px;color:var(--danger-color);border-color:rgba(239,68,68,0.3);" onclick="adminDeleteUser('${u.id}', '${u.username}')">🗑 Xóa</button>`;
+                    } else {
+                        actions += '<span style="font-size:11px;color:var(--text-muted);">— Bạn —</span>';
+                    }
+
+                    const dateStr = u.created_at ? u.created_at.split('T')[0] : '-';
+
+                    tr.innerHTML = `
+                        <td><strong>${i + 1}</strong></td>
+                        <td style="font-weight:500;">${u.username}</td>
+                        <td>${roleSelect}</td>
+                        <td>${statusBadge}</td>
+                        <td style="color:var(--text-muted);font-size:13px;">${dateStr}</td>
+                        <td>${actions}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                lucide.createIcons();
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="6" class="empty-state" style="color:var(--danger-color);">Lỗi: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function adminApproveUser(userId) {
+            try {
+                const res = await fetch(`/api/v1/admin/users/${userId}/approve`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Lỗi phê duyệt');
+                showToast(data.message || 'Đã phê duyệt tài khoản!', 'info');
+                loadAdminUsers();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function adminSetRole(userId, newRole) {
+            try {
+                const res = await fetch(`/api/v1/admin/users/${userId}/role`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ role: newRole })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Lỗi đổi quyền');
+                showToast(data.message || `Đã cập nhật quyền thành ${newRole}`, 'info');
+                loadAdminUsers();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        async function adminDeleteUser(userId, username) {
+            if (!confirm(`Bạn có chắc chắn muốn xóa tài khoản "${username}"?\nHành động này không thể hoàn tác!\n\nAre you sure you want to delete "${username}"?`)) {
+                return;
+            }
+            try {
+                const res = await fetch(`/api/v1/admin/users/${userId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Lỗi xóa tài khoản');
+                showToast(data.message || 'Đã xóa tài khoản!', 'info');
+                loadAdminUsers();
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        }
+
+        function scrollToAdminPanel(e) {
+            if (e) e.preventDefault();
+            toggleAdminSettingsModal(true);
+        }
+
+        function toggleAdminSettingsModal(show) {
+            const modal = document.getElementById('admin-settings-modal');
+            if (!modal) return;
+            
+            if (show) {
+                modal.style.display = 'flex';
+                // Trigger animation reflow
+                modal.offsetHeight;
+                modal.classList.add('show');
+                loadAdminUsers();
+                lucide.createIcons();
+            } else {
+                modal.classList.remove('show');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            }
+        }
+
+        function closeAdminSettingsModal(e) {
+            if (e.target === document.getElementById('admin-settings-modal')) {
+                toggleAdminSettingsModal(false);
+            }
+        }
+
+        function selectProjectFromDashboard(project) {
+            const projectSelect = document.getElementById('cs-fill-project');
+            if (projectSelect) {
+                projectSelect.value = project;
+                updateOperationOptions('cs-fill-project', 'cs-fill-operation', false);
+                
+                // Scroll down smoothly to the Online Inspection Workspace section
+                const workspaceTitle = document.getElementById('online-inspection-title');
+                if (workspaceTitle) {
+                    workspaceTitle.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
