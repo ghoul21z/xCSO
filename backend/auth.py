@@ -47,11 +47,14 @@ def init_auth_db():
     """)
     
     # Migration: add status column to existing DB
-    try:
-        cursor.execute("ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'approved'")
-        print("  [AUTH-MIGRATION] Added 'status' column to users table")
-    except:
-        pass  # Column already exists
+    cursor.execute("PRAGMA table_info(users)")
+    columns = [col[1] for col in cursor.fetchall()]
+    if "status" not in columns:
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN status TEXT NOT NULL DEFAULT 'approved'")
+            print("  [AUTH-MIGRATION] Added 'status' column to users table")
+        except Exception as e:
+            conn.rollback()
     
     # 2. Create sessions table
     cursor.execute("""
